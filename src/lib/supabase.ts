@@ -9,6 +9,8 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 // Database types for TypeScript
 export type RoleName = 'admin' | 'conductor' | 'analyst' | 'data recorder'
 export type UserStatus = 'active' | 'disabled'
+export type ScheduleStatus = 'pending schedule' | 'scheduled' | 'canceled' | 'aborted'
+export type ResultsStatus = 'valid' | 'invalid'
 
 export interface User {
   id: string
@@ -24,6 +26,52 @@ export interface Role {
   name: RoleName
   description: string
   created_at: string
+}
+
+export interface Experiment {
+  id: string
+  experiment_number: number
+  reps_required: number
+  rep_number: number
+  soaking_duration_hr: number
+  air_drying_time_min: number
+  plate_contact_frequency_hz: number
+  throughput_rate_pecans_sec: number
+  crush_amount_in: number
+  entry_exit_height_diff_in: number
+  schedule_status: ScheduleStatus
+  results_status: ResultsStatus
+  created_at: string
+  updated_at: string
+  created_by: string
+}
+
+export interface CreateExperimentRequest {
+  experiment_number: number
+  reps_required: number
+  rep_number: number
+  soaking_duration_hr: number
+  air_drying_time_min: number
+  plate_contact_frequency_hz: number
+  throughput_rate_pecans_sec: number
+  crush_amount_in: number
+  entry_exit_height_diff_in: number
+  schedule_status?: ScheduleStatus
+  results_status?: ResultsStatus
+}
+
+export interface UpdateExperimentRequest {
+  experiment_number?: number
+  reps_required?: number
+  rep_number?: number
+  soaking_duration_hr?: number
+  air_drying_time_min?: number
+  plate_contact_frequency_hz?: number
+  throughput_rate_pecans_sec?: number
+  crush_amount_in?: number
+  entry_exit_height_diff_in?: number
+  schedule_status?: ScheduleStatus
+  results_status?: ResultsStatus
 }
 
 export interface UserRole {
@@ -206,5 +254,118 @@ export const userManagement = {
       ...profile,
       roles: userRoles.map(ur => ur.roles.name as RoleName)
     }
+  }
+}
+
+// Experiment management utility functions
+export const experimentManagement = {
+  // Get all experiments
+  async getAllExperiments(): Promise<Experiment[]> {
+    const { data, error } = await supabase
+      .from('experiments')
+      .select('*')
+      .order('created_at', { ascending: false })
+
+    if (error) throw error
+    return data
+  },
+
+  // Get experiment by ID
+  async getExperimentById(id: string): Promise<Experiment | null> {
+    const { data, error } = await supabase
+      .from('experiments')
+      .select('*')
+      .eq('id', id)
+      .single()
+
+    if (error) {
+      if (error.code === 'PGRST116') return null // Not found
+      throw error
+    }
+    return data
+  },
+
+  // Create a new experiment
+  async createExperiment(experimentData: CreateExperimentRequest): Promise<Experiment> {
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    if (authError || !user) throw new Error('User not authenticated')
+
+    const { data, error } = await supabase
+      .from('experiments')
+      .insert({
+        ...experimentData,
+        created_by: user.id
+      })
+      .select()
+      .single()
+
+    if (error) throw error
+    return data
+  },
+
+  // Update an experiment
+  async updateExperiment(id: string, updates: UpdateExperimentRequest): Promise<Experiment> {
+    const { data, error } = await supabase
+      .from('experiments')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single()
+
+    if (error) throw error
+    return data
+  },
+
+  // Delete an experiment (admin only)
+  async deleteExperiment(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('experiments')
+      .delete()
+      .eq('id', id)
+
+    if (error) throw error
+  },
+
+  // Update experiment status
+  async updateExperimentStatus(id: string, scheduleStatus?: ScheduleStatus, resultsStatus?: ResultsStatus): Promise<Experiment> {
+    const updates: Partial<UpdateExperimentRequest> = {}
+    if (scheduleStatus) updates.schedule_status = scheduleStatus
+    if (resultsStatus) updates.results_status = resultsStatus
+
+    return this.updateExperiment(id, updates)
+  },
+
+  // Get experiments by status
+  async getExperimentsByStatus(scheduleStatus?: ScheduleStatus, resultsStatus?: ResultsStatus): Promise<Experiment[]> {
+    let query = supabase.from('experiments').select('*')
+
+    if (scheduleStatus) {
+      query = query.eq('schedule_status', scheduleStatus)
+    }
+    if (resultsStatus) {
+      query = query.eq('results_status', resultsStatus)
+    }
+
+    const { data, error } = await query.order('created_at', { ascending: false })
+
+    if (error) throw error
+    return data
+  },
+
+  // Check if experiment number is unique
+  async isExperimentNumberUnique(experimentNumber: number, excludeId?: string): Promise<boolean> {
+    let query = supabase
+      .from('experiments')
+      .select('id')
+      .eq('experiment_number', experimentNumber)
+
+    if (excludeId) {
+      query = query.neq('id', excludeId)
+    }
+
+    const { data, error } = await query
+
+    if (error) throw error
+    return data.length === 0
   }
 }

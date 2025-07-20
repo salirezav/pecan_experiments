@@ -3,6 +3,7 @@ import { Sidebar } from './Sidebar'
 import { TopNavbar } from './TopNavbar'
 import { DashboardHome } from './DashboardHome'
 import { UserManagement } from './UserManagement'
+import { Experiments } from './Experiments'
 import { userManagement, type User } from '../lib/supabase'
 
 interface DashboardLayoutProps {
@@ -65,16 +66,7 @@ export function DashboardLayout({ onLogout }: DashboardLayoutProps) {
           )
         }
       case 'experiments':
-        return (
-          <div className="p-6">
-            <h1 className="text-2xl font-bold text-gray-900 mb-4">Experiments</h1>
-            <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
-              <div className="text-sm text-blue-700">
-                Experiments module coming soon...
-              </div>
-            </div>
-          </div>
-        )
+        return <Experiments />
       case 'analytics':
         return (
           <div className="p-6">
