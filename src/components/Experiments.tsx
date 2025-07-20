@@ -190,10 +190,10 @@ export function Experiments() {
                   Experiment #
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Repetitions
+                  Reps Required
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Process Parameters
+                  Experiment Parameters
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Schedule Status
@@ -222,7 +222,7 @@ export function Experiments() {
                     #{experiment.experiment_number}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {experiment.rep_number} / {experiment.reps_required}
+                    {experiment.reps_required}
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-500">
                     <div className="space-y-1">

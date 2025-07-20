@@ -32,7 +32,6 @@ export interface Experiment {
   id: string
   experiment_number: number
   reps_required: number
-  rep_number: number
   soaking_duration_hr: number
   air_drying_time_min: number
   plate_contact_frequency_hz: number
@@ -49,7 +48,6 @@ export interface Experiment {
 export interface CreateExperimentRequest {
   experiment_number: number
   reps_required: number
-  rep_number: number
   soaking_duration_hr: number
   air_drying_time_min: number
   plate_contact_frequency_hz: number
@@ -63,7 +61,6 @@ export interface CreateExperimentRequest {
 export interface UpdateExperimentRequest {
   experiment_number?: number
   reps_required?: number
-  rep_number?: number
   soaking_duration_hr?: number
   air_drying_time_min?: number
   plate_contact_frequency_hz?: number

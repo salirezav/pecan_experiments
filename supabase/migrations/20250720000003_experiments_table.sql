@@ -6,7 +6,6 @@ CREATE TABLE IF NOT EXISTS public.experiments (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     experiment_number INTEGER UNIQUE NOT NULL,
     reps_required INTEGER NOT NULL CHECK (reps_required > 0),
-    rep_number INTEGER NOT NULL CHECK (rep_number > 0),
     soaking_duration_hr FLOAT NOT NULL CHECK (soaking_duration_hr >= 0),
     air_drying_time_min INTEGER NOT NULL CHECK (air_drying_time_min >= 0),
     plate_contact_frequency_hz FLOAT NOT NULL CHECK (plate_contact_frequency_hz > 0),
@@ -91,7 +90,6 @@ CREATE POLICY "experiments_delete_policy" ON public.experiments
 COMMENT ON TABLE public.experiments IS 'Stores experiment definitions for pecan processing with parameters and status tracking';
 COMMENT ON COLUMN public.experiments.experiment_number IS 'User-defined unique experiment identifier';
 COMMENT ON COLUMN public.experiments.reps_required IS 'Total number of repetitions needed for this experiment';
-COMMENT ON COLUMN public.experiments.rep_number IS 'Current repetition number for this entry';
 COMMENT ON COLUMN public.experiments.soaking_duration_hr IS 'Soaking process duration in hours';
 COMMENT ON COLUMN public.experiments.air_drying_time_min IS 'Air drying duration in minutes';
 COMMENT ON COLUMN public.experiments.plate_contact_frequency_hz IS 'JC Cracker machine plate contact frequency in Hz';
