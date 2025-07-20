@@ -5,47 +5,67 @@ interface SidebarProps {
   user: User
   currentView: string
   onViewChange: (view: string) => void
-  onLogout: () => void
 }
 
 interface MenuItem {
   id: string
   name: string
-  icon: string
+  icon: JSX.Element
   requiredRoles?: string[]
 }
 
-export function Sidebar({ user, currentView, onViewChange, onLogout }: SidebarProps) {
+export function Sidebar({ user, currentView, onViewChange }: SidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(false)
 
   const menuItems: MenuItem[] = [
     {
       id: 'dashboard',
       name: 'Dashboard',
-      icon: '🏠',
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5a2 2 0 012-2h4a2 2 0 012 2v6a2 2 0 01-2 2H10a2 2 0 01-2-2V5z" />
+        </svg>
+      ),
     },
     {
       id: 'user-management',
       name: 'User Management',
-      icon: '👥',
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+        </svg>
+      ),
       requiredRoles: ['admin']
     },
     {
       id: 'experiments',
       name: 'Experiments',
-      icon: '🧪',
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+        </svg>
+      ),
       requiredRoles: ['admin', 'conductor']
     },
     {
       id: 'analytics',
       name: 'Analytics',
-      icon: '📊',
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+        </svg>
+      ),
       requiredRoles: ['admin', 'conductor', 'analyst']
     },
     {
       id: 'data-entry',
       name: 'Data Entry',
-      icon: '📝',
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+        </svg>
+      ),
       requiredRoles: ['admin', 'conductor', 'data recorder']
     }
   ]
@@ -55,75 +75,36 @@ export function Sidebar({ user, currentView, onViewChange, onLogout }: SidebarPr
     return item.requiredRoles.some(role => user.roles.includes(role as any))
   }
 
-  const getRoleBadgeColor = (role: string) => {
-    switch (role) {
-      case 'admin':
-        return 'bg-red-100 text-red-800'
-      case 'conductor':
-        return 'bg-blue-100 text-blue-800'
-      case 'analyst':
-        return 'bg-green-100 text-green-800'
-      case 'data recorder':
-        return 'bg-purple-100 text-purple-800'
-      default:
-        return 'bg-gray-100 text-gray-800'
-    }
-  }
-
   return (
-    <div className={`bg-gray-900 text-white transition-all duration-300 ${isCollapsed ? 'w-16' : 'w-64'} min-h-screen flex flex-col`}>
+    <div className={`bg-white border-r border-gray-200 transition-all duration-300 ${isCollapsed ? 'w-16' : 'w-64'} min-h-screen flex flex-col shadow-lg relative z-20`}>
       {/* Header */}
-      <div className="p-4 border-b border-gray-700">
+      <div className="p-4 border-b border-gray-200">
         <div className="flex items-center justify-between">
           {!isCollapsed && (
             <div>
-              <h1 className="text-xl font-bold">RBAC System</h1>
-              <p className="text-sm text-gray-400">Admin Dashboard</p>
+              <h1 className="text-xl font-bold text-gray-900">RBAC System</h1>
+              <p className="text-sm text-gray-500">Admin Dashboard</p>
             </div>
           )}
           <button
             onClick={() => setIsCollapsed(!isCollapsed)}
-            className="p-2 rounded-lg hover:bg-gray-700 transition-colors"
+            className="p-2 rounded-lg hover:bg-gray-100 transition-colors text-gray-600 hover:text-gray-900"
             title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           >
-            {isCollapsed ? '→' : '←'}
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              {isCollapsed ? (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              ) : (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              )}
+            </svg>
           </button>
         </div>
       </div>
 
-      {/* User Info */}
-      <div className="p-4 border-b border-gray-700">
-        {!isCollapsed ? (
-          <div>
-            <div className="text-sm font-medium truncate">{user.email}</div>
-            <div className="mt-2 flex flex-wrap gap-1">
-              {user.roles.map((role) => (
-                <span
-                  key={role}
-                  className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${getRoleBadgeColor(role)}`}
-                >
-                  {role.charAt(0).toUpperCase() + role.slice(1)}
-                </span>
-              ))}
-            </div>
-            <div className="mt-2 text-xs text-gray-400">
-              Status: <span className={user.status === 'active' ? 'text-green-400' : 'text-red-400'}>
-                {user.status}
-              </span>
-            </div>
-          </div>
-        ) : (
-          <div className="flex justify-center">
-            <div className="w-8 h-8 bg-gray-600 rounded-full flex items-center justify-center text-sm font-medium">
-              {user.email.charAt(0).toUpperCase()}
-            </div>
-          </div>
-        )}
-      </div>
-
       {/* Navigation Menu */}
       <nav className="flex-1 p-4">
-        <ul className="space-y-2">
+        <ul className="space-y-1">
           {menuItems.map((item) => {
             if (!hasAccess(item)) return null
 
@@ -131,14 +112,15 @@ export function Sidebar({ user, currentView, onViewChange, onLogout }: SidebarPr
               <li key={item.id}>
                 <button
                   onClick={() => onViewChange(item.id)}
-                  className={`w-full flex items-center px-3 py-2 rounded-lg transition-colors ${
-                    currentView === item.id
-                      ? 'bg-blue-600 text-white'
-                      : 'text-gray-300 hover:bg-gray-700 hover:text-white'
-                  }`}
+                  className={`w-full flex items-center px-3 py-2.5 rounded-lg transition-colors group ${currentView === item.id
+                    ? 'bg-indigo-50 text-indigo-700 border-r-2 border-indigo-700'
+                    : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                    }`}
                   title={isCollapsed ? item.name : undefined}
                 >
-                  <span className="text-lg">{item.icon}</span>
+                  <span className={`${currentView === item.id ? 'text-indigo-700' : 'text-gray-400 group-hover:text-gray-600'}`}>
+                    {item.icon}
+                  </span>
                   {!isCollapsed && (
                     <span className="ml-3 text-sm font-medium">{item.name}</span>
                   )}
@@ -148,20 +130,6 @@ export function Sidebar({ user, currentView, onViewChange, onLogout }: SidebarPr
           })}
         </ul>
       </nav>
-
-      {/* Footer Actions */}
-      <div className="p-4 border-t border-gray-700">
-        <button
-          onClick={onLogout}
-          className="w-full flex items-center px-3 py-2 rounded-lg text-gray-300 hover:bg-red-600 hover:text-white transition-colors"
-          title={isCollapsed ? 'Sign Out' : undefined}
-        >
-          <span className="text-lg">🚪</span>
-          {!isCollapsed && (
-            <span className="ml-3 text-sm font-medium">Sign Out</span>
-          )}
-        </button>
-      </div>
     </div>
   )
 }

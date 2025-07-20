@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Sidebar } from './Sidebar'
+import { TopNavbar } from './TopNavbar'
 import { DashboardHome } from './DashboardHome'
 import { UserManagement } from './UserManagement'
 import { userManagement, type User } from '../lib/supabase'
@@ -147,16 +148,18 @@ export function DashboardLayout({ onLogout }: DashboardLayoutProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="min-h-screen bg-gray-100 flex">
       <Sidebar
         user={user}
         currentView={currentView}
         onViewChange={setCurrentView}
-        onLogout={handleLogout}
       />
-      <main className="flex-1 overflow-auto">
-        {renderCurrentView()}
-      </main>
+      <div className="flex-1 flex flex-col">
+        <TopNavbar user={user} onLogout={handleLogout} currentView={currentView} />
+        <main className="flex-1 overflow-auto">
+          {renderCurrentView()}
+        </main>
+      </div>
     </div>
   )
 }
