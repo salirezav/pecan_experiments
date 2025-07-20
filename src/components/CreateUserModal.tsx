@@ -64,9 +64,9 @@ export function CreateUserModal({ roles, onClose, onUserCreated }: CreateUserMod
 
     try {
       setLoading(true)
-      
+
       const response = await userManagement.createUser(formData)
-      
+
       // Create user object for the parent component
       const newUser: User = {
         id: response.user_id,
@@ -76,12 +76,12 @@ export function CreateUserModal({ roles, onClose, onUserCreated }: CreateUserMod
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       }
-      
+
       onUserCreated(newUser)
-      
+
       // Show success message with password
       alert(`User created successfully!\n\nEmail: ${response.email}\nTemporary Password: ${response.temp_password}\n\nPlease save this password as it won't be shown again.`)
-      
+
     } catch (err: any) {
       setError(err.message || 'Failed to create user')
       console.error('Create user error:', err)
@@ -106,25 +106,28 @@ export function CreateUserModal({ roles, onClose, onUserCreated }: CreateUserMod
   }
 
   return (
-    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-      <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-        <div className="mt-3">
-          {/* Header */}
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-medium text-gray-900">Create New User</h3>
-            <button
-              onClick={onClose}
-              className="text-gray-400 hover:text-gray-600"
-            >
-              ✕
-            </button>
-          </div>
+    <div className="fixed inset-0 bg-black bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
+      <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-md mx-auto">
+        {/* Header */}
+        <div className="flex items-center justify-between p-6 border-b border-gray-200">
+          <h3 className="text-xl font-semibold text-gray-900">Create New User</h3>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg p-2 transition-colors"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <div className="p-6">
 
           {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form id="create-user-form" onSubmit={handleSubmit} className="space-y-6">
             {/* Email */}
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
                 Email Address
               </label>
               <input
@@ -132,7 +135,7 @@ export function CreateUserModal({ roles, onClose, onUserCreated }: CreateUserMod
                 id="email"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-sm placeholder-gray-400"
                 placeholder="user@example.com"
                 required
               />
@@ -140,24 +143,26 @@ export function CreateUserModal({ roles, onClose, onUserCreated }: CreateUserMod
 
             {/* Roles */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-3">
                 Roles (select at least one)
               </label>
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {roles.map((role) => (
-                  <label key={role.id} className="flex items-center">
+                  <label key={role.id} className="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
                     <input
                       type="checkbox"
                       checked={formData.roles.includes(role.name)}
                       onChange={() => handleRoleToggle(role.name)}
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded mt-0.5"
                     />
-                    <span className="ml-2 text-sm text-gray-700">{role.name}</span>
-                    <span className="ml-2 text-xs text-gray-500">- {role.description}</span>
+                    <div className="ml-3 flex-1">
+                      <span className="text-sm font-medium text-gray-900 capitalize">{role.name}</span>
+                      <p className="text-xs text-gray-500 mt-1">{role.description}</p>
+                    </div>
                   </label>
                 ))}
               </div>
-              
+
               {/* Selected roles preview */}
               {formData.roles.length > 0 && (
                 <div className="mt-2">
@@ -178,64 +183,87 @@ export function CreateUserModal({ roles, onClose, onUserCreated }: CreateUserMod
 
             {/* Password */}
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
                 Temporary Password
               </label>
-              <div className="mt-1 flex rounded-md shadow-sm">
+              <div className="flex rounded-lg border border-gray-300 overflow-hidden focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500">
                 <input
                   type={showPassword ? 'text' : 'password'}
                   id="password"
                   value={formData.tempPassword}
                   onChange={(e) => setFormData({ ...formData, tempPassword: e.target.value })}
-                  className="flex-1 block w-full border-gray-300 rounded-l-md focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  className="flex-1 px-4 py-3 border-0 focus:ring-0 focus:outline-none text-sm placeholder-gray-400"
                   placeholder="Enter password or generate one"
                   required
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="inline-flex items-center px-3 py-2 border border-l-0 border-gray-300 bg-gray-50 text-gray-500 text-sm"
+                  className="px-3 py-3 bg-gray-50 hover:bg-gray-100 text-gray-600 border-l border-gray-300 transition-colors"
+                  title={showPassword ? 'Hide password' : 'Show password'}
                 >
-                  {showPassword ? '🙈' : '👁️'}
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    {showPassword ? (
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L8.464 8.464M9.878 9.878l-1.414-1.414M14.12 14.12l1.414 1.414M14.12 14.12L15.536 15.536M14.12 14.12l1.414 1.414" />
+                    ) : (
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    )}
+                  </svg>
                 </button>
                 <button
                   type="button"
                   onClick={generatePassword}
-                  className="inline-flex items-center px-3 py-2 border border-l-0 border-gray-300 rounded-r-md bg-gray-50 text-gray-500 text-sm hover:bg-gray-100"
+                  className="px-4 py-3 bg-blue-50 hover:bg-blue-100 text-blue-600 border-l border-gray-300 text-sm font-medium transition-colors"
                 >
                   Generate
                 </button>
               </div>
-              <p className="mt-1 text-xs text-gray-500">
+              <p className="mt-2 text-xs text-gray-500">
                 User will need to change this password on first login
               </p>
             </div>
 
             {/* Error */}
             {error && (
-              <div className="rounded-md bg-red-50 p-4">
-                <div className="text-sm text-red-700">{error}</div>
+              <div className="rounded-lg bg-red-50 border border-red-200 p-4">
+                <div className="flex items-center">
+                  <svg className="w-5 h-5 text-red-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <div className="text-sm text-red-700">{error}</div>
+                </div>
               </div>
             )}
-
-            {/* Actions */}
-            <div className="flex justify-end space-x-3 pt-4">
-              <button
-                type="button"
-                onClick={onClose}
-                className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={loading}
-                className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {loading ? 'Creating...' : 'Create User'}
-              </button>
-            </div>
           </form>
+        </div>
+
+        {/* Actions */}
+        <div className="flex justify-end space-x-3 p-6 border-t border-gray-200 bg-gray-50 rounded-b-xl">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-6 py-2.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            form="create-user-form"
+            disabled={loading}
+            className="px-6 py-2.5 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            {loading ? (
+              <div className="flex items-center">
+                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Creating...
+              </div>
+            ) : (
+              'Create User'
+            )}
+          </button>
         </div>
       </div>
     </div>

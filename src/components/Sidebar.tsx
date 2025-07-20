@@ -76,19 +76,19 @@ export function Sidebar({ user, currentView, onViewChange }: SidebarProps) {
   }
 
   return (
-    <div className={`bg-white border-r border-gray-200 transition-all duration-300 ${isCollapsed ? 'w-16' : 'w-64'} min-h-screen flex flex-col shadow-lg relative z-20`}>
+    <div className={`bg-slate-800 transition-all duration-300 ${isCollapsed ? 'w-16' : 'w-64'} min-h-screen flex flex-col shadow-xl relative z-20`}>
       {/* Header */}
-      <div className="p-4 border-b border-gray-200">
+      <div className="p-4 border-b border-slate-700">
         <div className="flex items-center justify-between">
           {!isCollapsed && (
             <div>
-              <h1 className="text-xl font-bold text-gray-900">RBAC System</h1>
-              <p className="text-sm text-gray-500">Admin Dashboard</p>
+              <h1 className="text-xl font-bold text-white">RBAC System</h1>
+              <p className="text-sm text-slate-400">Admin Dashboard</p>
             </div>
           )}
           <button
             onClick={() => setIsCollapsed(!isCollapsed)}
-            className="p-2 rounded-lg hover:bg-gray-100 transition-colors text-gray-600 hover:text-gray-900"
+            className="p-2 rounded-lg hover:bg-slate-700 transition-colors text-slate-400 hover:text-white"
             title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -104,7 +104,7 @@ export function Sidebar({ user, currentView, onViewChange }: SidebarProps) {
 
       {/* Navigation Menu */}
       <nav className="flex-1 p-4">
-        <ul className="space-y-1">
+        <ul className="space-y-2">
           {menuItems.map((item) => {
             if (!hasAccess(item)) return null
 
@@ -112,17 +112,24 @@ export function Sidebar({ user, currentView, onViewChange }: SidebarProps) {
               <li key={item.id}>
                 <button
                   onClick={() => onViewChange(item.id)}
-                  className={`w-full flex items-center px-3 py-2.5 rounded-lg transition-colors group ${currentView === item.id
-                    ? 'bg-indigo-50 text-indigo-700 border-r-2 border-indigo-700'
-                    : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                  className={`w-full flex items-center px-3 py-3 rounded-lg transition-all duration-200 group ${currentView === item.id
+                    ? 'bg-blue-600 text-white shadow-lg'
+                    : 'text-slate-300 hover:bg-slate-700 hover:text-white'
                     }`}
                   title={isCollapsed ? item.name : undefined}
                 >
-                  <span className={`${currentView === item.id ? 'text-indigo-700' : 'text-gray-400 group-hover:text-gray-600'}`}>
+                  <span className={`transition-colors ${currentView === item.id ? 'text-white' : 'text-slate-400 group-hover:text-white'}`}>
                     {item.icon}
                   </span>
                   {!isCollapsed && (
                     <span className="ml-3 text-sm font-medium">{item.name}</span>
+                  )}
+                  {!isCollapsed && currentView === item.id && (
+                    <div className="ml-auto">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </div>
                   )}
                 </button>
               </li>
