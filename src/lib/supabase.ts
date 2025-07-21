@@ -40,6 +40,7 @@ export interface Experiment {
   entry_exit_height_diff_in: number
   schedule_status: ScheduleStatus
   results_status: ResultsStatus
+  scheduled_date?: string | null
   created_at: string
   updated_at: string
   created_by: string
@@ -56,6 +57,7 @@ export interface CreateExperimentRequest {
   entry_exit_height_diff_in: number
   schedule_status?: ScheduleStatus
   results_status?: ResultsStatus
+  scheduled_date?: string | null
 }
 
 export interface UpdateExperimentRequest {
@@ -69,6 +71,7 @@ export interface UpdateExperimentRequest {
   entry_exit_height_diff_in?: number
   schedule_status?: ScheduleStatus
   results_status?: ResultsStatus
+  scheduled_date?: string | null
 }
 
 export interface UserRole {
@@ -347,6 +350,26 @@ export const experimentManagement = {
 
     if (error) throw error
     return data
+  },
+
+  // Schedule an experiment
+  async scheduleExperiment(id: string, scheduledDate: string): Promise<Experiment> {
+    const updates: UpdateExperimentRequest = {
+      scheduled_date: scheduledDate,
+      schedule_status: 'scheduled'
+    }
+
+    return this.updateExperiment(id, updates)
+  },
+
+  // Remove experiment schedule
+  async removeExperimentSchedule(id: string): Promise<Experiment> {
+    const updates: UpdateExperimentRequest = {
+      scheduled_date: null,
+      schedule_status: 'pending schedule'
+    }
+
+    return this.updateExperiment(id, updates)
   },
 
   // Check if experiment number is unique

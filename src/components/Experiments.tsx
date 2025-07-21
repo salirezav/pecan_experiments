@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { ExperimentModal } from './ExperimentModal'
+import { ScheduleModal } from './ScheduleModal'
 import { experimentManagement, userManagement } from '../lib/supabase'
 import type { Experiment, User, ScheduleStatus, ResultsStatus } from '../lib/supabase'
 
@@ -11,6 +12,8 @@ export function Experiments() {
   const [editingExperiment, setEditingExperiment] = useState<Experiment | undefined>(undefined)
   const [currentUser, setCurrentUser] = useState<User | null>(null)
   const [filterStatus, setFilterStatus] = useState<ScheduleStatus | 'all'>('all')
+  const [showScheduleModal, setShowScheduleModal] = useState(false)
+  const [schedulingExperiment, setSchedulingExperiment] = useState<Experiment | undefined>(undefined)
 
   useEffect(() => {
     loadData()
@@ -56,6 +59,21 @@ export function Experiments() {
       // Add new experiment
       setExperiments(prev => [experiment, ...prev])
     }
+    setShowModal(false)
+    setEditingExperiment(undefined)
+  }
+
+  const handleScheduleExperiment = (experiment: Experiment) => {
+    setSchedulingExperiment(experiment)
+    setShowScheduleModal(true)
+  }
+
+  const handleScheduleUpdated = (updatedExperiment: Experiment) => {
+    setExperiments(prev => prev.map(exp =>
+      exp.id === updatedExperiment.id ? updatedExperiment : exp
+    ))
+    setShowScheduleModal(false)
+    setSchedulingExperiment(undefined)
   }
 
   const handleDeleteExperiment = async (experiment: Experiment) => {
@@ -198,6 +216,11 @@ export function Experiments() {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Schedule Status
                 </th>
+                {canManageExperiments && (
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Scheduled Date/Time
+                  </th>
+                )}
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Results Status
                 </th>
@@ -236,6 +259,29 @@ export function Experiments() {
                       {experiment.schedule_status}
                     </span>
                   </td>
+                  {canManageExperiments && (
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <div className="flex items-center space-x-2">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleScheduleExperiment(experiment)
+                          }}
+                          className="text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50 transition-colors"
+                          title="Schedule"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                        </button>
+                        {experiment.scheduled_date && (
+                          <span className="text-xs">
+                            {new Date(experiment.scheduled_date).toLocaleString()}
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                  )}
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadgeColor(experiment.results_status)}`}>
                       {experiment.results_status}
@@ -301,12 +347,21 @@ export function Experiments() {
         )}
       </div>
 
-      {/* Modal */}
+      {/* Experiment Modal */}
       {showModal && (
         <ExperimentModal
           experiment={editingExperiment}
           onClose={() => setShowModal(false)}
           onExperimentSaved={handleExperimentSaved}
+        />
+      )}
+
+      {/* Schedule Modal */}
+      {showScheduleModal && schedulingExperiment && (
+        <ScheduleModal
+          experiment={schedulingExperiment}
+          onClose={() => setShowScheduleModal(false)}
+          onScheduleUpdated={handleScheduleUpdated}
         />
       )}
     </div>
