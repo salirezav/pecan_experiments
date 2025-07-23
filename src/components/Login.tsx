@@ -97,12 +97,6 @@ export function Login({ onLoginSuccess }: LoginProps) {
               {loading ? 'Signing in...' : 'Sign in'}
             </button>
           </div>
-
-          <div className="text-center">
-            <p className="text-sm text-gray-600">
-              Test credentials: s.alireza.v@gmail.com / 2517392
-            </p>
-          </div>
         </form>
       </div>
     </div>
