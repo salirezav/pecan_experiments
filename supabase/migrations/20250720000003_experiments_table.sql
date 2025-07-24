@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS public.experiments (
     entry_exit_height_diff_in FLOAT NOT NULL,
     schedule_status TEXT NOT NULL DEFAULT 'pending schedule' CHECK (schedule_status IN ('pending schedule', 'scheduled', 'canceled', 'aborted')),
     results_status TEXT NOT NULL DEFAULT 'valid' CHECK (results_status IN ('valid', 'invalid')),
+    completion_status BOOLEAN NOT NULL DEFAULT false,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     created_by UUID NOT NULL REFERENCES public.user_profiles(id)
@@ -24,6 +25,7 @@ CREATE INDEX IF NOT EXISTS idx_experiments_experiment_number ON public.experimen
 CREATE INDEX IF NOT EXISTS idx_experiments_created_by ON public.experiments(created_by);
 CREATE INDEX IF NOT EXISTS idx_experiments_schedule_status ON public.experiments(schedule_status);
 CREATE INDEX IF NOT EXISTS idx_experiments_results_status ON public.experiments(results_status);
+CREATE INDEX IF NOT EXISTS idx_experiments_completion_status ON public.experiments(completion_status);
 CREATE INDEX IF NOT EXISTS idx_experiments_created_at ON public.experiments(created_at);
 
 -- Create trigger for updated_at
@@ -98,3 +100,4 @@ COMMENT ON COLUMN public.experiments.crush_amount_in IS 'Crushing amount in thou
 COMMENT ON COLUMN public.experiments.entry_exit_height_diff_in IS 'Height difference between entry/exit points in inches (can be negative)';
 COMMENT ON COLUMN public.experiments.schedule_status IS 'Current scheduling status of the experiment';
 COMMENT ON COLUMN public.experiments.results_status IS 'Validity status of experiment results';
+COMMENT ON COLUMN public.experiments.completion_status IS 'Boolean flag indicating if the experiment has been completed';

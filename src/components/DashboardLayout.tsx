@@ -4,6 +4,7 @@ import { TopNavbar } from './TopNavbar'
 import { DashboardHome } from './DashboardHome'
 import { UserManagement } from './UserManagement'
 import { Experiments } from './Experiments'
+import { DataEntry } from './DataEntry'
 import { userManagement, type User } from '../lib/supabase'
 
 interface DashboardLayoutProps {
@@ -79,16 +80,7 @@ export function DashboardLayout({ onLogout }: DashboardLayoutProps) {
           </div>
         )
       case 'data-entry':
-        return (
-          <div className="p-6">
-            <h1 className="text-2xl font-bold text-gray-900 mb-4">Data Entry</h1>
-            <div className="bg-purple-50 border border-purple-200 rounded-md p-4">
-              <div className="text-sm text-purple-700">
-                Data entry module coming soon...
-              </div>
-            </div>
-          </div>
-        )
+        return <DataEntry />
       default:
         return <DashboardHome user={user} />
     }

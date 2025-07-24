@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import type { CreateExperimentRequest, UpdateExperimentRequest, ScheduleStatus, ResultsStatus } from '../lib/supabase'
 
 interface ExperimentFormProps {
-  initialData?: Partial<CreateExperimentRequest & { schedule_status: ScheduleStatus; results_status: ResultsStatus }>
+  initialData?: Partial<CreateExperimentRequest & { schedule_status: ScheduleStatus; results_status: ResultsStatus; completion_status: boolean }>
   onSubmit: (data: CreateExperimentRequest | UpdateExperimentRequest) => Promise<void>
   onCancel: () => void
   isEditing?: boolean
@@ -10,7 +10,7 @@ interface ExperimentFormProps {
 }
 
 export function ExperimentForm({ initialData, onSubmit, onCancel, isEditing = false, loading = false }: ExperimentFormProps) {
-  const [formData, setFormData] = useState<CreateExperimentRequest & { schedule_status: ScheduleStatus; results_status: ResultsStatus }>({
+  const [formData, setFormData] = useState<CreateExperimentRequest & { schedule_status: ScheduleStatus; results_status: ResultsStatus; completion_status: boolean }>({
     experiment_number: initialData?.experiment_number || 0,
     reps_required: initialData?.reps_required || 1,
     soaking_duration_hr: initialData?.soaking_duration_hr || 0,
@@ -20,7 +20,8 @@ export function ExperimentForm({ initialData, onSubmit, onCancel, isEditing = fa
     crush_amount_in: initialData?.crush_amount_in || 0,
     entry_exit_height_diff_in: initialData?.entry_exit_height_diff_in || 0,
     schedule_status: initialData?.schedule_status || 'pending schedule',
-    results_status: initialData?.results_status || 'valid'
+    results_status: initialData?.results_status || 'valid',
+    completion_status: initialData?.completion_status || false
   })
 
   const [errors, setErrors] = useState<Record<string, string>>({})
@@ -93,7 +94,7 @@ export function ExperimentForm({ initialData, onSubmit, onCancel, isEditing = fa
     }
   }
 
-  const handleInputChange = (field: keyof typeof formData, value: string | number) => {
+  const handleInputChange = (field: keyof typeof formData, value: string | number | boolean) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -324,6 +325,24 @@ export function ExperimentForm({ initialData, onSubmit, onCancel, isEditing = fa
                 <option value="valid">Valid</option>
                 <option value="invalid">Invalid</option>
               </select>
+            </div>
+
+            <div>
+              <label htmlFor="completion_status" className="block text-sm font-medium text-gray-700 mb-2">
+                Completion Status
+              </label>
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id="completion_status"
+                  checked={formData.completion_status}
+                  onChange={(e) => handleInputChange('completion_status', e.target.checked)}
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                />
+                <label htmlFor="completion_status" className="ml-2 text-sm text-gray-700">
+                  Mark as completed
+                </label>
+              </div>
             </div>
           </div>
         </div>

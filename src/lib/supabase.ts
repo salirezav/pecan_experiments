@@ -40,6 +40,7 @@ export interface Experiment {
   entry_exit_height_diff_in: number
   schedule_status: ScheduleStatus
   results_status: ResultsStatus
+  completion_status: boolean
   scheduled_date?: string | null
   created_at: string
   updated_at: string
@@ -57,6 +58,7 @@ export interface CreateExperimentRequest {
   entry_exit_height_diff_in: number
   schedule_status?: ScheduleStatus
   results_status?: ResultsStatus
+  completion_status?: boolean
   scheduled_date?: string | null
 }
 
@@ -71,7 +73,93 @@ export interface UpdateExperimentRequest {
   entry_exit_height_diff_in?: number
   schedule_status?: ScheduleStatus
   results_status?: ResultsStatus
+  completion_status?: boolean
   scheduled_date?: string | null
+}
+
+// Data Entry System Interfaces
+export type DataEntryStatus = 'draft' | 'submitted'
+export type ExperimentPhase = 'pre-soaking' | 'air-drying' | 'cracking' | 'shelling'
+
+export interface ExperimentDataEntry {
+  id: string
+  experiment_id: string
+  user_id: string
+  status: DataEntryStatus
+  entry_name?: string | null
+  created_at: string
+  updated_at: string
+  submitted_at?: string | null
+}
+
+export interface PecanDiameterMeasurement {
+  id: string
+  phase_data_id: string
+  measurement_number: number
+  diameter_in: number
+  created_at: string
+}
+
+export interface ExperimentPhaseData {
+  id: string
+  data_entry_id: string
+  phase_name: ExperimentPhase
+
+  // Pre-soaking phase
+  batch_initial_weight_lbs?: number | null
+  initial_shell_moisture_pct?: number | null
+  initial_kernel_moisture_pct?: number | null
+  soaking_start_time?: string | null
+
+  // Air-drying phase
+  airdrying_start_time?: string | null
+  post_soak_weight_lbs?: number | null
+  post_soak_kernel_moisture_pct?: number | null
+  post_soak_shell_moisture_pct?: number | null
+  avg_pecan_diameter_in?: number | null
+
+  // Cracking phase
+  cracking_start_time?: string | null
+
+  // Shelling phase
+  shelling_start_time?: string | null
+  bin_1_weight_lbs?: number | null
+  bin_2_weight_lbs?: number | null
+  bin_3_weight_lbs?: number | null
+  discharge_bin_weight_lbs?: number | null
+  bin_1_full_yield_oz?: number | null
+  bin_2_full_yield_oz?: number | null
+  bin_3_full_yield_oz?: number | null
+  bin_1_half_yield_oz?: number | null
+  bin_2_half_yield_oz?: number | null
+  bin_3_half_yield_oz?: number | null
+
+  created_at: string
+  updated_at: string
+
+  // Related data
+  diameter_measurements?: PecanDiameterMeasurement[]
+}
+
+export interface CreateDataEntryRequest {
+  experiment_id: string
+  entry_name?: string
+  status?: DataEntryStatus
+}
+
+export interface UpdateDataEntryRequest {
+  entry_name?: string
+  status?: DataEntryStatus
+}
+
+export interface CreatePhaseDataRequest {
+  data_entry_id: string
+  phase_name: ExperimentPhase
+  [key: string]: any // For phase-specific data fields
+}
+
+export interface UpdatePhaseDataRequest {
+  [key: string]: any // For phase-specific data fields
 }
 
 export interface UserRole {
@@ -137,7 +225,7 @@ export const userManagement = {
 
         return {
           ...profile,
-          roles: userRoles.map(ur => ur.roles.name as RoleName)
+          roles: userRoles.map(ur => (ur.roles as any).name as RoleName)
         }
       })
     )
@@ -252,7 +340,7 @@ export const userManagement = {
 
     return {
       ...profile,
-      roles: userRoles.map(ur => ur.roles.name as RoleName)
+      roles: userRoles.map(ur => (ur.roles as any).name as RoleName)
     }
   }
 }
@@ -387,5 +475,178 @@ export const experimentManagement = {
 
     if (error) throw error
     return data.length === 0
+  }
+}
+
+// Data Entry Management
+export const dataEntryManagement = {
+  // Get all data entries for an experiment
+  async getDataEntriesForExperiment(experimentId: string): Promise<ExperimentDataEntry[]> {
+    const { data, error } = await supabase
+      .from('experiment_data_entries')
+      .select('*')
+      .eq('experiment_id', experimentId)
+      .order('created_at', { ascending: false })
+
+    if (error) throw error
+    return data
+  },
+
+  // Get user's data entries for an experiment
+  async getUserDataEntriesForExperiment(experimentId: string, userId?: string): Promise<ExperimentDataEntry[]> {
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    if (authError || !user) throw new Error('User not authenticated')
+
+    const targetUserId = userId || user.id
+
+    const { data, error } = await supabase
+      .from('experiment_data_entries')
+      .select('*')
+      .eq('experiment_id', experimentId)
+      .eq('user_id', targetUserId)
+      .order('created_at', { ascending: false })
+
+    if (error) throw error
+    return data
+  },
+
+  // Create a new data entry
+  async createDataEntry(request: CreateDataEntryRequest): Promise<ExperimentDataEntry> {
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    if (authError || !user) throw new Error('User not authenticated')
+
+    const { data, error } = await supabase
+      .from('experiment_data_entries')
+      .insert({
+        ...request,
+        user_id: user.id
+      })
+      .select()
+      .single()
+
+    if (error) throw error
+    return data
+  },
+
+  // Update a data entry
+  async updateDataEntry(id: string, updates: UpdateDataEntryRequest): Promise<ExperimentDataEntry> {
+    const { data, error } = await supabase
+      .from('experiment_data_entries')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single()
+
+    if (error) throw error
+    return data
+  },
+
+  // Delete a data entry (only drafts)
+  async deleteDataEntry(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('experiment_data_entries')
+      .delete()
+      .eq('id', id)
+
+    if (error) throw error
+  },
+
+  // Submit a data entry (change status from draft to submitted)
+  async submitDataEntry(id: string): Promise<ExperimentDataEntry> {
+    return this.updateDataEntry(id, { status: 'submitted' })
+  },
+
+  // Get phase data for a data entry
+  async getPhaseDataForEntry(dataEntryId: string): Promise<ExperimentPhaseData[]> {
+    const { data, error } = await supabase
+      .from('experiment_phase_data')
+      .select(`
+        *,
+        diameter_measurements:pecan_diameter_measurements(*)
+      `)
+      .eq('data_entry_id', dataEntryId)
+      .order('phase_name')
+
+    if (error) throw error
+    return data
+  },
+
+  // Get specific phase data
+  async getPhaseData(dataEntryId: string, phaseName: ExperimentPhase): Promise<ExperimentPhaseData | null> {
+    const { data, error } = await supabase
+      .from('experiment_phase_data')
+      .select(`
+        *,
+        diameter_measurements:pecan_diameter_measurements(*)
+      `)
+      .eq('data_entry_id', dataEntryId)
+      .eq('phase_name', phaseName)
+      .single()
+
+    if (error) {
+      if (error.code === 'PGRST116') return null // Not found
+      throw error
+    }
+    return data
+  },
+
+  // Create or update phase data
+  async upsertPhaseData(dataEntryId: string, phaseName: ExperimentPhase, phaseData: Partial<ExperimentPhaseData>): Promise<ExperimentPhaseData> {
+    const { data, error } = await supabase
+      .from('experiment_phase_data')
+      .upsert({
+        data_entry_id: dataEntryId,
+        phase_name: phaseName,
+        ...phaseData
+      }, {
+        onConflict: 'data_entry_id,phase_name'
+      })
+      .select()
+      .single()
+
+    if (error) throw error
+    return data
+  },
+
+  // Save diameter measurements
+  async saveDiameterMeasurements(phaseDataId: string, measurements: number[]): Promise<PecanDiameterMeasurement[]> {
+    // First, delete existing measurements
+    await supabase
+      .from('pecan_diameter_measurements')
+      .delete()
+      .eq('phase_data_id', phaseDataId)
+
+    // Then insert new measurements
+    const measurementData = measurements.map((diameter, index) => ({
+      phase_data_id: phaseDataId,
+      measurement_number: index + 1,
+      diameter_in: diameter
+    }))
+
+    const { data, error } = await supabase
+      .from('pecan_diameter_measurements')
+      .insert(measurementData)
+      .select()
+
+    if (error) throw error
+    return data
+  },
+
+  // Calculate average diameter from measurements
+  calculateAverageDiameter(measurements: number[]): number {
+    if (measurements.length === 0) return 0
+    const validMeasurements = measurements.filter(m => m > 0)
+    if (validMeasurements.length === 0) return 0
+    return validMeasurements.reduce((sum, m) => sum + m, 0) / validMeasurements.length
+  },
+
+  // Auto-save draft data (for periodic saves)
+  async autoSaveDraft(dataEntryId: string, phaseName: ExperimentPhase, phaseData: Partial<ExperimentPhaseData>): Promise<void> {
+    try {
+      await this.upsertPhaseData(dataEntryId, phaseName, phaseData)
+    } catch (error) {
+      console.warn('Auto-save failed:', error)
+      // Don't throw error for auto-save failures
+    }
   }
 }

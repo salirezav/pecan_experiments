@@ -10,7 +10,7 @@ interface SidebarProps {
 interface MenuItem {
   id: string
   name: string
-  icon: JSX.Element
+  icon: React.ReactElement
   requiredRoles?: string[]
 }
 
