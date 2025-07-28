@@ -23,17 +23,23 @@ export interface MachineStatus {
 }
 
 export interface CameraStatus {
-  name: string
+  name?: string
   status: string
   is_recording: boolean
   last_checked: string
-  last_error: string | null
+  last_error?: string | null
   device_info?: {
-    friendly_name: string
-    serial_number: string
+    friendly_name?: string
+    serial_number?: string
+    port_type?: string
+    model?: string
+    firmware_version?: string
+    last_checked?: number
   }
-  current_recording_file: string | null
-  recording_start_time: string | null
+  current_recording_file?: string | null
+  recording_start_time?: string | null
+  last_frame_time?: string
+  frame_rate?: number
 }
 
 export interface RecordingInfo {

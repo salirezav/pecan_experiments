@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo, memo, startTransition } from 'react'
 import {
   visionApi,
   type SystemStatus,
@@ -13,6 +13,353 @@ import {
   formatDuration,
   formatUptime
 } from '../lib/visionApi'
+
+// Memoized components to prevent unnecessary re-renders
+const SystemOverview = memo(({ systemStatus }: { systemStatus: SystemStatus }) => (
+  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div className="bg-white overflow-hidden shadow rounded-lg">
+      <div className="p-5">
+        <div className="flex items-center">
+          <div className="flex-shrink-0">
+            <div className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${systemStatus.system_started ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+              {systemStatus.system_started ? 'Online' : 'Offline'}
+            </div>
+          </div>
+        </div>
+        <div className="mt-4">
+          <div className="text-2xl font-semibold text-gray-900">System Status</div>
+          <div className="mt-1 text-sm text-gray-500">
+            Uptime: {formatUptime(systemStatus.uptime_seconds)}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div className="bg-white overflow-hidden shadow rounded-lg">
+      <div className="p-5">
+        <div className="flex items-center">
+          <div className="flex-shrink-0">
+            <div className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${systemStatus.mqtt_connected ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+              {systemStatus.mqtt_connected ? 'Connected' : 'Disconnected'}
+            </div>
+          </div>
+        </div>
+        <div className="mt-4">
+          <div className="text-2xl font-semibold text-gray-900">MQTT Status</div>
+          <div className="mt-1 text-sm text-gray-500">
+            Last message: {systemStatus.last_mqtt_message || 'Never'}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div className="bg-white overflow-hidden shadow rounded-lg">
+      <div className="p-5">
+        <div className="flex items-center">
+          <div className="flex-shrink-0">
+            <div className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+              {systemStatus.active_recordings} Active
+            </div>
+          </div>
+        </div>
+        <div className="mt-4">
+          <div className="text-2xl font-semibold text-gray-900">Recordings</div>
+          <div className="mt-1 text-sm text-gray-500">
+            Total: {systemStatus.total_recordings}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div className="bg-white overflow-hidden shadow rounded-lg">
+      <div className="p-5">
+        <div className="flex items-center">
+          <div className="flex-shrink-0">
+            <div className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+              {Object.keys(systemStatus.cameras).length} Cameras
+            </div>
+          </div>
+        </div>
+        <div className="mt-4">
+          <div className="text-2xl font-semibold text-gray-900">Devices</div>
+          <div className="mt-1 text-sm text-gray-500">
+            {Object.keys(systemStatus.machines).length} Machines
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+))
+
+const StorageOverview = memo(({ storageStats }: { storageStats: StorageStats }) => (
+  <div className="bg-white shadow rounded-lg">
+    <div className="px-4 py-5 sm:px-6">
+      <h3 className="text-lg leading-6 font-medium text-gray-900">Storage</h3>
+      <p className="mt-1 max-w-2xl text-sm text-gray-500">
+        Storage usage and file statistics
+      </p>
+    </div>
+    <div className="border-t border-gray-200 p-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+        <div className="text-center">
+          <div className="text-3xl font-bold text-blue-600">{storageStats.total_files}</div>
+          <div className="text-sm text-gray-500">Total Files</div>
+        </div>
+        <div className="text-center">
+          <div className="text-3xl font-bold text-green-600">{formatBytes(storageStats.total_size_bytes)}</div>
+          <div className="text-sm text-gray-500">Total Size</div>
+        </div>
+        <div className="text-center">
+          <div className="text-3xl font-bold text-purple-600">{formatBytes(storageStats.disk_usage.free)}</div>
+          <div className="text-sm text-gray-500">Free Space</div>
+        </div>
+      </div>
+
+      {/* Disk Usage Bar */}
+      <div className="mb-6">
+        <div className="flex justify-between text-sm text-gray-600 mb-2">
+          <span>Disk Usage</span>
+          <span>{Math.round((storageStats.disk_usage.used / storageStats.disk_usage.total) * 100)}% used</span>
+        </div>
+        <div className="w-full bg-gray-200 rounded-full h-2">
+          <div
+            className="bg-blue-600 h-2 rounded-full"
+            style={{ width: `${(storageStats.disk_usage.used / storageStats.disk_usage.total) * 100}%` }}
+          ></div>
+        </div>
+        <div className="flex justify-between text-xs text-gray-500 mt-1">
+          <span>{formatBytes(storageStats.disk_usage.used)} used</span>
+          <span>{formatBytes(storageStats.disk_usage.total)} total</span>
+        </div>
+      </div>
+
+      {/* Per-Camera Statistics */}
+      {Object.keys(storageStats.cameras).length > 0 && (
+        <div>
+          <h4 className="text-md font-medium text-gray-900 mb-4">Files by Camera</h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {Object.entries(storageStats.cameras).map(([cameraName, stats]) => (
+              <div key={cameraName} className="border border-gray-200 rounded-lg p-4">
+                <h5 className="font-medium text-gray-900 mb-2">{cameraName}</h5>
+                <div className="space-y-1 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Files:</span>
+                    <span className="text-gray-900">{stats.file_count}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Size:</span>
+                    <span className="text-gray-900">{formatBytes(stats.total_size_bytes)}</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  </div>
+))
+
+const CamerasStatus = memo(({ systemStatus }: { systemStatus: SystemStatus }) => (
+  <div className="bg-white shadow rounded-lg">
+    <div className="px-4 py-5 sm:px-6">
+      <h3 className="text-lg leading-6 font-medium text-gray-900">Cameras</h3>
+      <p className="mt-1 max-w-2xl text-sm text-gray-500">
+        Current status of all cameras in the system
+      </p>
+    </div>
+    <div className="border-t border-gray-200">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-6">
+        {Object.entries(systemStatus.cameras).map(([cameraName, camera]) => {
+          const friendlyName = camera.device_info?.friendly_name
+          const hasDeviceInfo = !!camera.device_info
+          const hasSerial = !!camera.device_info?.serial_number
+
+          // Determine if camera is connected based on status
+          const isConnected = camera.status === 'available' || camera.status === 'connected'
+          const hasError = camera.status === 'error'
+          const statusText = camera.status || 'unknown'
+
+          return (
+            <div key={cameraName} className="border border-gray-200 rounded-lg p-4">
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="text-lg font-medium text-gray-900">
+                  {friendlyName || cameraName}
+                  {friendlyName && (
+                    <span className="text-gray-500 text-sm font-normal ml-2">({cameraName})</span>
+                  )}
+                </h4>
+                <div className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${isConnected ? 'bg-green-100 text-green-800' :
+                  hasError ? 'bg-yellow-100 text-yellow-800' :
+                    'bg-red-100 text-red-800'
+                  }`}>
+                  {isConnected ? 'Connected' : hasError ? 'Error' : 'Disconnected'}
+                </div>
+              </div>
+
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Status:</span>
+                  <span className={`font-medium ${isConnected ? 'text-green-600' :
+                    hasError ? 'text-yellow-600' :
+                      'text-red-600'
+                    }`}>
+                    {statusText.charAt(0).toUpperCase() + statusText.slice(1)}
+                  </span>
+                </div>
+
+                {camera.is_recording && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Recording:</span>
+                    <span className="text-red-600 font-medium flex items-center">
+                      <div className="w-2 h-2 bg-red-500 rounded-full mr-2 animate-pulse"></div>
+                      Active
+                    </span>
+                  </div>
+                )}
+
+                {hasDeviceInfo && (
+                  <>
+                    {camera.device_info.model && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-500">Model:</span>
+                        <span className="text-gray-900">{camera.device_info.model}</span>
+                      </div>
+                    )}
+                    {hasSerial && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-500">Serial:</span>
+                        <span className="text-gray-900 font-mono text-xs">{camera.device_info.serial_number}</span>
+                      </div>
+                    )}
+                    {camera.device_info.firmware_version && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-500">Firmware:</span>
+                        <span className="text-gray-900 font-mono text-xs">{camera.device_info.firmware_version}</span>
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {camera.last_frame_time && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Last Frame:</span>
+                    <span className="text-gray-900">{new Date(camera.last_frame_time).toLocaleTimeString()}</span>
+                  </div>
+                )}
+
+                {camera.frame_rate && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Frame Rate:</span>
+                    <span className="text-gray-900">{camera.frame_rate.toFixed(1)} fps</span>
+                  </div>
+                )}
+
+                {camera.last_checked && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Last Checked:</span>
+                    <span className="text-gray-900">{new Date(camera.last_checked).toLocaleTimeString()}</span>
+                  </div>
+                )}
+
+                {camera.current_recording_file && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Recording File:</span>
+                    <span className="text-gray-900 truncate ml-2">{camera.current_recording_file}</span>
+                  </div>
+                )}
+
+                {camera.last_error && (
+                  <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded">
+                    <div className="text-red-800 text-xs">
+                      <strong>Error:</strong> {camera.last_error}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  </div>
+))
+
+const RecentRecordings = memo(({ recordings, systemStatus }: { recordings: Record<string, RecordingInfo>, systemStatus: SystemStatus | null }) => (
+  <div className="bg-white shadow rounded-lg">
+    <div className="px-4 py-5 sm:px-6">
+      <h3 className="text-lg leading-6 font-medium text-gray-900">Recent Recordings</h3>
+      <p className="mt-1 max-w-2xl text-sm text-gray-500">
+        Latest recording sessions
+      </p>
+    </div>
+    <div className="border-t border-gray-200">
+      <div className="overflow-x-auto">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Camera
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Filename
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Status
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Duration
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Size
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Started
+              </th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {Object.entries(recordings).slice(0, 10).map(([recordingId, recording]) => {
+              const camera = systemStatus?.cameras[recording.camera_name]
+              const displayName = camera?.device_info?.friendly_name || recording.camera_name
+
+              return (
+                <tr key={recordingId}>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {displayName}
+                    {camera?.device_info?.friendly_name && (
+                      <div className="text-xs text-gray-500">({recording.camera_name})</div>
+                    )}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-mono">
+                    {recording.filename}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${recording.status === 'recording' ? 'bg-red-100 text-red-800' :
+                      recording.status === 'completed' ? 'bg-green-100 text-green-800' :
+                        'bg-yellow-100 text-yellow-800'
+                      }`}>
+                      {recording.status}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {recording.duration_seconds ? formatDuration(recording.duration_seconds) : '-'}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {recording.file_size_bytes ? formatBytes(recording.file_size_bytes) : '-'}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {new Date(recording.start_time).toLocaleString()}
+                  </td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+))
 
 export function VisionSystem() {
   const [systemStatus, setSystemStatus] = useState<SystemStatus | null>(null)
@@ -110,38 +457,25 @@ export function VisionSystem() {
         }
       }
 
-      // Only update state if data has actually changed to prevent unnecessary re-renders
-      setSystemStatus(prevStatus => {
-        if (JSON.stringify(prevStatus) !== JSON.stringify(statusData)) {
-          return statusData
+      // Batch state updates to minimize re-renders using startTransition for non-urgent updates
+      const updateTime = new Date()
+
+      // Use startTransition for non-urgent state updates to keep the UI responsive
+      startTransition(() => {
+        setSystemStatus(statusData)
+        setStorageStats(storageData)
+        setRecordings(recordingsData)
+        setLastUpdateTime(updateTime)
+
+        // Update MQTT status and events
+        if (mqttStatusData) {
+          setMqttStatus(mqttStatusData)
         }
-        return prevStatus
-      })
 
-      setStorageStats(prevStats => {
-        if (JSON.stringify(prevStats) !== JSON.stringify(storageData)) {
-          return storageData
+        if (mqttEventsData && mqttEventsData.events) {
+          setMqttEvents(mqttEventsData.events)
         }
-        return prevStats
       })
-
-      setRecordings(prevRecordings => {
-        if (JSON.stringify(prevRecordings) !== JSON.stringify(recordingsData)) {
-          return recordingsData
-        }
-        return prevRecordings
-      })
-
-      setLastUpdateTime(new Date())
-
-      // Update MQTT status and events
-      if (mqttStatusData) {
-        setMqttStatus(mqttStatusData)
-      }
-
-      if (mqttEventsData && mqttEventsData.events) {
-        setMqttEvents(mqttEventsData.events)
-      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch vision system data')
       console.error('Vision system fetch error:', err)
@@ -242,8 +576,14 @@ export function VisionSystem() {
           <h1 className="text-3xl font-bold text-gray-900">Vision System</h1>
           <p className="mt-2 text-gray-600">Monitor cameras, machines, and recording status</p>
           {lastUpdateTime && (
-            <p className="mt-1 text-sm text-gray-500 flex items-center space-x-2">
+            <p className={`mt-1 text-sm text-gray-500 flex items-center space-x-2 ${refreshing ? 'animate-pulse' : ''}`}>
               <span>Last updated: {lastUpdateTime.toLocaleTimeString()}</span>
+              {refreshing && (
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                  <span className="animate-spin rounded-full h-3 w-3 border-b border-blue-600 mr-1 inline-block"></span>
+                  Updating...
+                </span>
+              )}
               {autoRefreshEnabled && !refreshing && (
                 <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                   Auto-refresh: {refreshInterval / 1000}s
@@ -296,227 +636,12 @@ export function VisionSystem() {
       </div>
 
       {/* System Overview */}
-      {systemStatus && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div className="bg-white overflow-hidden shadow rounded-lg">
-            <div className="p-5">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <div className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${systemStatus.system_started ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                    {systemStatus.system_started ? 'Online' : 'Offline'}
-                  </div>
-                </div>
-              </div>
-              <div className="mt-4">
-                <div className="text-2xl font-semibold text-gray-900">System Status</div>
-                <div className="mt-1 text-sm text-gray-500">
-                  Uptime: {formatUptime(systemStatus.uptime_seconds)}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white overflow-hidden shadow rounded-lg">
-            <div className="p-5">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <div className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${systemStatus.mqtt_connected ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                      {systemStatus.mqtt_connected ? 'Connected' : 'Disconnected'}
-                    </div>
-                  </div>
-                  {systemStatus.mqtt_connected && (
-                    <div className="ml-3 flex items-center space-x-2">
-                      <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                      <span className="text-sm text-green-600">Live</span>
-                    </div>
-                  )}
-                </div>
-                {mqttStatus && (
-                  <div className="text-right text-xs text-gray-500">
-                    <div>{mqttStatus.message_count} messages</div>
-                    <div>{mqttStatus.error_count} errors</div>
-                  </div>
-                )}
-              </div>
-              <div className="mt-4">
-                <div className="text-2xl font-semibold text-gray-900">MQTT</div>
-                <div className="mt-1 text-sm text-gray-500">
-                  {mqttStatus ? (
-                    <div>
-                      <div>Broker: {mqttStatus.broker_host}:{mqttStatus.broker_port}</div>
-                      <div>Last message: {new Date(mqttStatus.last_message_time).toLocaleTimeString()}</div>
-                    </div>
-                  ) : (
-                    <div>Last message: {new Date(systemStatus.last_mqtt_message).toLocaleTimeString()}</div>
-                  )}
-                </div>
-              </div>
-
-              {/* MQTT Events History */}
-              {mqttEvents.length > 0 && (
-                <div className="mt-4 border-t border-gray-200 pt-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <h4 className="text-sm font-medium text-gray-900">Recent Events</h4>
-                    <span className="text-xs text-gray-500">{mqttEvents.length} events</span>
-                  </div>
-                  <div className="max-h-32 overflow-y-auto space-y-2">
-                    {mqttEvents.map((event, index) => (
-                      <div key={`${event.timestamp}-${event.message_number}`} className="flex items-center justify-between text-xs">
-                        <div className="flex items-center space-x-2 flex-1 min-w-0">
-                          <span className="text-gray-500 font-mono w-12 flex-shrink-0">
-                            {new Date(event.timestamp).toLocaleTimeString().slice(-8, -3)}
-                          </span>
-                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 flex-shrink-0">
-                            {event.machine_name.replace('_', ' ')}
-                          </span>
-                          <span className="text-gray-900 font-medium truncate">
-                            {event.payload}
-                          </span>
-                        </div>
-                        <span className="text-gray-400 ml-2 flex-shrink-0">#{event.message_number}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="bg-white overflow-hidden shadow rounded-lg">
-            <div className="p-5">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <div className="text-3xl font-bold text-indigo-600">
-                    {systemStatus.active_recordings}
-                  </div>
-                </div>
-              </div>
-              <div className="mt-4">
-                <div className="text-lg font-medium text-gray-900">Active Recordings</div>
-                <div className="mt-1 text-sm text-gray-500">
-                  Total: {systemStatus.total_recordings}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white overflow-hidden shadow rounded-lg">
-            <div className="p-5">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <div className="text-3xl font-bold text-purple-600">
-                    {Object.keys(systemStatus.cameras).length}
-                  </div>
-                </div>
-              </div>
-              <div className="mt-4">
-                <div className="text-lg font-medium text-gray-900">Cameras</div>
-                <div className="mt-1 text-sm text-gray-500">
-                  Machines: {Object.keys(systemStatus.machines).length}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {systemStatus && <SystemOverview systemStatus={systemStatus} />}
 
 
 
       {/* Cameras Status */}
-      {systemStatus && (
-        <div className="bg-white shadow rounded-lg">
-          <div className="px-4 py-5 sm:px-6">
-            <h3 className="text-lg leading-6 font-medium text-gray-900">Cameras</h3>
-            <p className="mt-1 max-w-2xl text-sm text-gray-500">
-              Current status of all cameras in the system
-            </p>
-          </div>
-          <div className="border-t border-gray-200">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-6">
-              {Object.entries(systemStatus.cameras).map(([cameraName, camera]) => {
-                // Debug logging to see what data we're getting
-                console.log(`Camera ${cameraName} data:`, JSON.stringify(camera, null, 2))
-
-                const friendlyName = camera.device_info?.friendly_name
-                const hasDeviceInfo = !!camera.device_info
-                const hasSerial = !!camera.device_info?.serial_number
-
-                return (
-                  <div key={cameraName} className="border border-gray-200 rounded-lg p-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <div>
-                        <h4 className="text-lg font-medium text-gray-900">
-                          {friendlyName ? (
-                            <div>
-                              <div className="text-lg">{friendlyName}</div>
-                              <div className="text-sm text-gray-600 font-normal">({cameraName})</div>
-                            </div>
-                          ) : (
-                            <div>
-                              <div className="text-lg">{cameraName}</div>
-                              <div className="text-xs text-gray-500">
-                                {hasDeviceInfo ? 'Device info available but no friendly name' : 'No device info available'}
-                              </div>
-                            </div>
-                          )}
-                        </h4>
-                      </div>
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(camera.status, camera.is_recording)}`}>
-                        {camera.is_recording ? 'Recording' : camera.status}
-                      </span>
-                    </div>
-
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-gray-500">Recording:</span>
-                        <span className={`font-medium ${camera.is_recording ? 'text-red-600' : 'text-gray-900'}`}>
-                          {camera.is_recording ? 'Yes' : 'No'}
-                        </span>
-                      </div>
-
-                      {camera.device_info?.serial_number && (
-                        <div className="flex justify-between">
-                          <span className="text-gray-500">Serial:</span>
-                          <span className="text-gray-900">{camera.device_info.serial_number}</span>
-                        </div>
-                      )}
-
-                      {/* Debug info - remove this after fixing */}
-                      <div className="mt-2 p-2 bg-gray-50 border border-gray-200 rounded text-xs">
-                        <div className="font-medium text-gray-700 mb-1">Debug Info:</div>
-                        <div className="text-gray-600">
-                          <div>Has device_info: {hasDeviceInfo ? 'Yes' : 'No'}</div>
-                          <div>Has friendly_name: {friendlyName ? 'Yes' : 'No'}</div>
-                          <div>Has serial: {hasSerial ? 'Yes' : 'No'}</div>
-                          <div>Last error: {camera.last_error || 'None'}</div>
-                          {camera.device_info && (
-                            <div className="mt-1">
-                              <div>Raw device_info: {JSON.stringify(camera.device_info)}</div>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="flex justify-between">
-                        <span className="text-gray-500">Last checked:</span>
-                        <span className="text-gray-900">{new Date(camera.last_checked).toLocaleTimeString()}</span>
-                      </div>
-
-                      {camera.current_recording_file && (
-                        <div className="flex justify-between">
-                          <span className="text-gray-500">Recording file:</span>
-                          <span className="text-gray-900 truncate ml-2">{camera.current_recording_file}</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-        </div>
-      )}
+      {systemStatus && <CamerasStatus systemStatus={systemStatus} />}
 
       {/* Machines Status */}
       {systemStatus && Object.keys(systemStatus.machines).length > 0 && (
@@ -568,168 +693,10 @@ export function VisionSystem() {
       )}
 
       {/* Storage Statistics */}
-      {storageStats && (
-        <div className="bg-white shadow rounded-lg">
-          <div className="px-4 py-5 sm:px-6">
-            <h3 className="text-lg leading-6 font-medium text-gray-900">Storage</h3>
-            <p className="mt-1 max-w-2xl text-sm text-gray-500">
-              Storage usage and file statistics
-            </p>
-          </div>
-          <div className="border-t border-gray-200 p-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-              <div className="text-center">
-                <div className="text-3xl font-bold text-blue-600">{storageStats.total_files}</div>
-                <div className="text-sm text-gray-500">Total Files</div>
-              </div>
-              <div className="text-center">
-                <div className="text-3xl font-bold text-green-600">{formatBytes(storageStats.total_size_bytes)}</div>
-                <div className="text-sm text-gray-500">Total Size</div>
-              </div>
-              <div className="text-center">
-                <div className="text-3xl font-bold text-purple-600">{formatBytes(storageStats.disk_usage.free)}</div>
-                <div className="text-sm text-gray-500">Free Space</div>
-              </div>
-            </div>
-
-            {/* Disk Usage Bar */}
-            <div className="mb-6">
-              <div className="flex justify-between text-sm text-gray-600 mb-2">
-                <span>Disk Usage</span>
-                <span>{Math.round((storageStats.disk_usage.used / storageStats.disk_usage.total) * 100)}% used</span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div
-                  className="bg-blue-600 h-2 rounded-full"
-                  style={{ width: `${(storageStats.disk_usage.used / storageStats.disk_usage.total) * 100}%` }}
-                ></div>
-              </div>
-              <div className="flex justify-between text-xs text-gray-500 mt-1">
-                <span>{formatBytes(storageStats.disk_usage.used)} used</span>
-                <span>{formatBytes(storageStats.disk_usage.total)} total</span>
-              </div>
-            </div>
-
-            {/* Per-Camera Statistics */}
-            {Object.keys(storageStats.cameras).length > 0 && (
-              <div>
-                <h4 className="text-md font-medium text-gray-900 mb-4">Files by Camera</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {Object.entries(storageStats.cameras).map(([cameraName, stats]) => {
-                    // Find the corresponding camera to get friendly name
-                    const camera = systemStatus?.cameras[cameraName]
-                    const displayName = camera?.device_info?.friendly_name || cameraName
-
-                    return (
-                      <div key={cameraName} className="border border-gray-200 rounded-lg p-4">
-                        <h5 className="font-medium text-gray-900 mb-2">
-                          {camera?.device_info?.friendly_name ? (
-                            <>
-                              {displayName}
-                              <span className="text-gray-500 text-sm font-normal ml-2">({cameraName})</span>
-                            </>
-                          ) : (
-                            cameraName
-                          )}
-                        </h5>
-                        <div className="space-y-1 text-sm">
-                          <div className="flex justify-between">
-                            <span className="text-gray-500">Files:</span>
-                            <span className="text-gray-900">{stats.file_count}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-gray-500">Size:</span>
-                            <span className="text-gray-900">{formatBytes(stats.total_size_bytes)}</span>
-                          </div>
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+      {storageStats && <StorageOverview storageStats={storageStats} />}
 
       {/* Recent Recordings */}
-      {Object.keys(recordings).length > 0 && (
-        <div className="bg-white shadow rounded-lg">
-          <div className="px-4 py-5 sm:px-6">
-            <h3 className="text-lg leading-6 font-medium text-gray-900">Recent Recordings</h3>
-            <p className="mt-1 max-w-2xl text-sm text-gray-500">
-              Latest recording sessions
-            </p>
-          </div>
-          <div className="border-t border-gray-200">
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Camera
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Filename
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Status
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Duration
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Size
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Started
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {Object.entries(recordings).slice(0, 10).map(([recordingId, recording]) => {
-                    // Find the corresponding camera to get friendly name
-                    const camera = systemStatus?.cameras[recording.camera_name]
-                    const displayName = camera?.device_info?.friendly_name || recording.camera_name
-
-                    return (
-                      <tr key={recordingId}>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                          {camera?.device_info?.friendly_name ? (
-                            <div>
-                              <div>{displayName}</div>
-                              <div className="text-xs text-gray-500">({recording.camera_name})</div>
-                            </div>
-                          ) : (
-                            recording.camera_name
-                          )}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-mono">
-                          {recording.filename}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(recording.state)}`}>
-                            {recording.state}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {recording.duration_seconds ? formatDuration(recording.duration_seconds) : '-'}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {recording.file_size_bytes ? formatBytes(recording.file_size_bytes) : '-'}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {new Date(recording.start_time).toLocaleString()}
-                        </td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      )}
+      {Object.keys(recordings).length > 0 && <RecentRecordings recordings={recordings} systemStatus={systemStatus} />}
     </div>
   )
 }

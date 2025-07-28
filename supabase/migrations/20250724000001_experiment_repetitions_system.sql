@@ -85,15 +85,11 @@ CREATE TRIGGER trigger_experiment_repetitions_updated_at
 ALTER TABLE public.experiment_repetitions ENABLE ROW LEVEL SECURITY;
 
 -- Create RLS policies for experiment_repetitions
--- Users can view repetitions for experiments they have access to
+-- All authenticated users can view all experiment repetitions
 CREATE POLICY "Users can view experiment repetitions" ON public.experiment_repetitions
-    FOR SELECT USING (
-        experiment_id IN (
-            SELECT id FROM public.experiments
-            WHERE created_by = auth.uid()
-        )
-        OR public.is_admin()
-    );
+    FOR SELECT
+    TO authenticated
+    USING (true);
 
 -- Users can insert repetitions for experiments they created or if they're admin
 CREATE POLICY "Users can create experiment repetitions" ON public.experiment_repetitions
