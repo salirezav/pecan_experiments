@@ -5,6 +5,7 @@ import { DashboardHome } from './DashboardHome'
 import { UserManagement } from './UserManagement'
 import { Experiments } from './Experiments'
 import { DataEntry } from './DataEntry'
+import { VisionSystem } from './VisionSystem'
 import { userManagement, type User } from '../lib/supabase'
 
 interface DashboardLayoutProps {
@@ -81,6 +82,8 @@ export function DashboardLayout({ onLogout }: DashboardLayoutProps) {
         )
       case 'data-entry':
         return <DataEntry />
+      case 'vision-system':
+        return <VisionSystem />
       default:
         return <DashboardHome user={user} />
     }

@@ -1,8 +1,23 @@
 import { useState, useEffect } from 'react'
-import { dataEntryManagement, type ExperimentDataEntry, type ExperimentPhase, type ExperimentPhaseData } from '../lib/supabase'
+import { type ExperimentPhase, type ExperimentPhaseData } from '../lib/supabase'
+
+// DEPRECATED: This component is deprecated in favor of RepetitionPhaseSelector
+// which uses the new phase-specific draft system
+
+// Temporary type for backward compatibility
+interface LegacyDataEntry {
+  id: string
+  experiment_id: string
+  user_id: string
+  status: 'draft' | 'submitted'
+  entry_name?: string | null
+  created_at: string
+  updated_at: string
+  submitted_at?: string | null
+}
 
 interface PhaseSelectorProps {
-  dataEntry: ExperimentDataEntry
+  dataEntry: LegacyDataEntry
   onPhaseSelect: (phase: ExperimentPhase) => void
 }
 
@@ -61,7 +76,8 @@ export function PhaseSelector({ dataEntry, onPhaseSelect }: PhaseSelectorProps) 
   const loadPhaseData = async () => {
     try {
       setLoading(true)
-      const allPhaseData = await dataEntryManagement.getPhaseDataForEntry(dataEntry.id)
+      // DEPRECATED: Using empty array since this component is deprecated
+      const allPhaseData: ExperimentPhaseData[] = []
 
       const phaseDataMap: Record<ExperimentPhase, ExperimentPhaseData | null> = {
         'pre-soaking': null,

@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react'
-import { dataEntryManagement, type Experiment, type ExperimentDataEntry, type User, type ExperimentPhase } from '../lib/supabase'
+import { type Experiment, type User, type ExperimentPhase } from '../lib/supabase'
 import { DraftManager } from './DraftManager'
 import { PhaseSelector } from './PhaseSelector'
-import { PhaseDataEntry } from './PhaseDataEntry'
+
+// DEPRECATED: This component is deprecated in favor of RepetitionDataEntryInterface
+// which uses the new phase-specific draft system
 
 interface DataEntryInterfaceProps {
   experiment: Experiment
@@ -10,9 +12,21 @@ interface DataEntryInterfaceProps {
   onBack: () => void
 }
 
+// Temporary type for backward compatibility
+interface LegacyDataEntry {
+  id: string
+  experiment_id: string
+  user_id: string
+  status: 'draft' | 'submitted'
+  entry_name?: string | null
+  created_at: string
+  updated_at: string
+  submitted_at?: string | null
+}
+
 export function DataEntryInterface({ experiment, currentUser, onBack }: DataEntryInterfaceProps) {
-  const [userDataEntries, setUserDataEntries] = useState<ExperimentDataEntry[]>([])
-  const [selectedDataEntry, setSelectedDataEntry] = useState<ExperimentDataEntry | null>(null)
+  const [userDataEntries, setUserDataEntries] = useState<LegacyDataEntry[]>([])
+  const [selectedDataEntry, setSelectedDataEntry] = useState<LegacyDataEntry | null>(null)
   const [selectedPhase, setSelectedPhase] = useState<ExperimentPhase | null>(null)
   const [showDraftManager, setShowDraftManager] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -27,7 +41,8 @@ export function DataEntryInterface({ experiment, currentUser, onBack }: DataEntr
       setLoading(true)
       setError(null)
 
-      const entries = await dataEntryManagement.getUserDataEntriesForExperiment(experiment.id)
+      // DEPRECATED: Using empty array since this component is deprecated
+      const entries: LegacyDataEntry[] = []
       setUserDataEntries(entries)
 
       // Auto-select the most recent draft or create a new one
@@ -47,58 +62,21 @@ export function DataEntryInterface({ experiment, currentUser, onBack }: DataEntr
   }
 
   const handleCreateNewDraft = async () => {
-    try {
-      const newEntry = await dataEntryManagement.createDataEntry({
-        experiment_id: experiment.id,
-        entry_name: `Draft ${new Date().toLocaleString()}`,
-        status: 'draft'
-      })
-
-      setUserDataEntries(prev => [newEntry, ...prev])
-      setSelectedDataEntry(newEntry)
-      setShowDraftManager(false)
-    } catch (err: any) {
-      setError(err.message || 'Failed to create new draft')
-    }
+    setError('This component is deprecated. Please use the new repetition-based data entry system.')
   }
 
-  const handleSelectDataEntry = (entry: ExperimentDataEntry) => {
+  const handleSelectDataEntry = (entry: LegacyDataEntry) => {
     setSelectedDataEntry(entry)
     setShowDraftManager(false)
     setSelectedPhase(null)
   }
 
-  const handleDeleteDraft = async (entryId: string) => {
-    try {
-      await dataEntryManagement.deleteDataEntry(entryId)
-      setUserDataEntries(prev => prev.filter(entry => entry.id !== entryId))
-
-      // If we deleted the currently selected entry, select another or create new
-      if (selectedDataEntry?.id === entryId) {
-        const remainingDrafts = userDataEntries.filter(entry => entry.id !== entryId && entry.status === 'draft')
-        if (remainingDrafts.length > 0) {
-          setSelectedDataEntry(remainingDrafts[0])
-        } else {
-          await handleCreateNewDraft()
-        }
-      }
-    } catch (err: any) {
-      setError(err.message || 'Failed to delete draft')
-    }
+  const handleDeleteDraft = async (_entryId: string) => {
+    setError('This component is deprecated. Please use the new repetition-based data entry system.')
   }
 
-  const handleSubmitEntry = async (entryId: string) => {
-    try {
-      const submittedEntry = await dataEntryManagement.submitDataEntry(entryId)
-      setUserDataEntries(prev => prev.map(entry =>
-        entry.id === entryId ? submittedEntry : entry
-      ))
-
-      // Create a new draft for continued work
-      await handleCreateNewDraft()
-    } catch (err: any) {
-      setError(err.message || 'Failed to submit entry')
-    }
+  const handleSubmitEntry = async (_entryId: string) => {
+    setError('This component is deprecated. Please use the new repetition-based data entry system.')
   }
 
   const handlePhaseSelect = (phase: ExperimentPhase) => {
@@ -195,14 +173,7 @@ export function DataEntryInterface({ experiment, currentUser, onBack }: DataEntr
               </span>
             </div>
           </div>
-          {experiment.scheduled_date && (
-            <div className="mt-2 text-sm">
-              <span className="font-medium text-gray-700">Scheduled:</span>
-              <span className="ml-1 text-gray-900">
-                {new Date(experiment.scheduled_date).toLocaleString()}
-              </span>
-            </div>
-          )}
+          {/* Scheduled date removed - this is now handled at repetition level */}
         </div>
 
         {/* Current Draft Info */}
@@ -237,17 +208,12 @@ export function DataEntryInterface({ experiment, currentUser, onBack }: DataEntr
           onCreateNew={handleCreateNewDraft}
           onClose={() => setShowDraftManager(false)}
         />
-      ) : selectedPhase && selectedDataEntry ? (
-        <PhaseDataEntry
-          experiment={experiment}
-          dataEntry={selectedDataEntry}
-          phase={selectedPhase}
-          onBack={handleBackToPhases}
-          onDataSaved={() => {
-            // Refresh data entries to show updated timestamps
-            loadUserDataEntries()
-          }}
-        />
+      ) : selectedPhase ? (
+        <div className="bg-red-50 border border-red-200 rounded-md p-4">
+          <div className="text-sm text-red-700">
+            This component is deprecated. Please use the new repetition-based data entry system.
+          </div>
+        </div>
       ) : selectedDataEntry ? (
         <PhaseSelector
           dataEntry={selectedDataEntry}

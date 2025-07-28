@@ -1,19 +1,20 @@
 import { useState, useEffect } from 'react'
 import { ExperimentModal } from './ExperimentModal'
-import { ScheduleModal } from './ScheduleModal'
-import { experimentManagement, userManagement } from '../lib/supabase'
-import type { Experiment, User, ScheduleStatus, ResultsStatus } from '../lib/supabase'
+import { RepetitionScheduleModal } from './RepetitionScheduleModal'
+import { experimentManagement, repetitionManagement, userManagement } from '../lib/supabase'
+import type { Experiment, ExperimentRepetition, User, ScheduleStatus, ResultsStatus } from '../lib/supabase'
 
 export function Experiments() {
   const [experiments, setExperiments] = useState<Experiment[]>([])
+  const [experimentRepetitions, setExperimentRepetitions] = useState<Record<string, ExperimentRepetition[]>>({})
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [showModal, setShowModal] = useState(false)
   const [editingExperiment, setEditingExperiment] = useState<Experiment | undefined>(undefined)
   const [currentUser, setCurrentUser] = useState<User | null>(null)
-  const [filterStatus, setFilterStatus] = useState<ScheduleStatus | 'all'>('all')
-  const [showScheduleModal, setShowScheduleModal] = useState(false)
-  const [schedulingExperiment, setSchedulingExperiment] = useState<Experiment | undefined>(undefined)
+
+  const [showRepetitionScheduleModal, setShowRepetitionScheduleModal] = useState(false)
+  const [schedulingRepetition, setSchedulingRepetition] = useState<{ experiment: Experiment; repetition: ExperimentRepetition } | undefined>(undefined)
 
   useEffect(() => {
     loadData()
@@ -31,6 +32,19 @@ export function Experiments() {
 
       setExperiments(experimentsData)
       setCurrentUser(userData)
+
+      // Load repetitions for each experiment
+      const repetitionsMap: Record<string, ExperimentRepetition[]> = {}
+      for (const experiment of experimentsData) {
+        try {
+          const repetitions = await repetitionManagement.getExperimentRepetitions(experiment.id)
+          repetitionsMap[experiment.id] = repetitions
+        } catch (err) {
+          console.error(`Failed to load repetitions for experiment ${experiment.id}:`, err)
+          repetitionsMap[experiment.id] = []
+        }
+      }
+      setExperimentRepetitions(repetitionsMap)
     } catch (err: any) {
       setError(err.message || 'Failed to load experiments')
       console.error('Load experiments error:', err)
@@ -51,29 +65,60 @@ export function Experiments() {
     setShowModal(true)
   }
 
-  const handleExperimentSaved = (experiment: Experiment) => {
+  const handleExperimentSaved = async (experiment: Experiment) => {
     if (editingExperiment) {
       // Update existing experiment
       setExperiments(prev => prev.map(exp => exp.id === experiment.id ? experiment : exp))
     } else {
-      // Add new experiment
+      // Add new experiment and create all its repetitions
       setExperiments(prev => [experiment, ...prev])
+
+      try {
+        // Create all repetitions for the new experiment
+        const repetitions = await repetitionManagement.createAllRepetitions(experiment.id)
+        setExperimentRepetitions(prev => ({
+          ...prev,
+          [experiment.id]: repetitions
+        }))
+      } catch (err) {
+        console.error('Failed to create repetitions:', err)
+      }
     }
     setShowModal(false)
     setEditingExperiment(undefined)
   }
 
-  const handleScheduleExperiment = (experiment: Experiment) => {
-    setSchedulingExperiment(experiment)
-    setShowScheduleModal(true)
+  const handleScheduleRepetition = (experiment: Experiment, repetition: ExperimentRepetition) => {
+    setSchedulingRepetition({ experiment, repetition })
+    setShowRepetitionScheduleModal(true)
   }
 
-  const handleScheduleUpdated = (updatedExperiment: Experiment) => {
-    setExperiments(prev => prev.map(exp =>
-      exp.id === updatedExperiment.id ? updatedExperiment : exp
-    ))
-    setShowScheduleModal(false)
-    setSchedulingExperiment(undefined)
+  const handleRepetitionScheduleUpdated = (updatedRepetition: ExperimentRepetition) => {
+    setExperimentRepetitions(prev => ({
+      ...prev,
+      [updatedRepetition.experiment_id]: prev[updatedRepetition.experiment_id]?.map(rep =>
+        rep.id === updatedRepetition.id ? updatedRepetition : rep
+      ) || []
+    }))
+    setShowRepetitionScheduleModal(false)
+    setSchedulingRepetition(undefined)
+  }
+
+  const handleCreateRepetition = async (experiment: Experiment, repetitionNumber: number) => {
+    try {
+      const newRepetition = await repetitionManagement.createRepetition({
+        experiment_id: experiment.id,
+        repetition_number: repetitionNumber,
+        schedule_status: 'pending schedule'
+      })
+
+      setExperimentRepetitions(prev => ({
+        ...prev,
+        [experiment.id]: [...(prev[experiment.id] || []), newRepetition].sort((a, b) => a.repetition_number - b.repetition_number)
+      }))
+    } catch (err: any) {
+      setError(err.message || 'Failed to create repetition')
+    }
   }
 
   const handleDeleteExperiment = async (experiment: Experiment) => {
@@ -95,18 +140,12 @@ export function Experiments() {
     }
   }
 
-  const handleStatusUpdate = async (experiment: Experiment, scheduleStatus?: ScheduleStatus, resultsStatus?: ResultsStatus) => {
-    try {
-      const updatedExperiment = await experimentManagement.updateExperimentStatus(
-        experiment.id,
-        scheduleStatus,
-        resultsStatus
-      )
-      setExperiments(prev => prev.map(exp => exp.id === experiment.id ? updatedExperiment : exp))
-    } catch (err: any) {
-      alert(`Failed to update status: ${err.message}`)
-      console.error('Update status error:', err)
-    }
+  const getRepetitionStatusSummary = (repetitions: ExperimentRepetition[]) => {
+    const scheduled = repetitions.filter(r => r.schedule_status === 'scheduled').length
+    const pending = repetitions.filter(r => r.schedule_status === 'pending schedule').length
+    const completed = repetitions.filter(r => r.completion_status).length
+
+    return { scheduled, pending, completed, total: repetitions.length }
   }
 
   const getStatusBadgeColor = (status: ScheduleStatus | ResultsStatus) => {
@@ -128,9 +167,8 @@ export function Experiments() {
     }
   }
 
-  const filteredExperiments = filterStatus === 'all'
-    ? experiments
-    : experiments.filter(exp => exp.schedule_status === filterStatus)
+  // Remove filtering for now since experiments don't have schedule_status anymore
+  const filteredExperiments = experiments
 
   if (loading) {
     return (
@@ -150,6 +188,7 @@ export function Experiments() {
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Experiments</h1>
             <p className="mt-2 text-gray-600">Manage pecan processing experiment definitions</p>
+            <p className="mt-2 text-gray-600">This is where you define the blueprint of an experiment with the required configurations and parameters, as well as the number of repetitions needed for that experiment.</p>
           </div>
           {canManageExperiments && (
             <button
@@ -169,26 +208,7 @@ export function Experiments() {
         </div>
       )}
 
-      {/* Filters */}
-      <div className="mb-6">
-        <div className="flex items-center space-x-4">
-          <label htmlFor="status-filter" className="text-sm font-medium text-gray-700">
-            Filter by Schedule Status:
-          </label>
-          <select
-            id="status-filter"
-            value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value as ScheduleStatus | 'all')}
-            className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-          >
-            <option value="all">All Statuses</option>
-            <option value="pending schedule">Pending Schedule</option>
-            <option value="scheduled">Scheduled</option>
-            <option value="canceled">Canceled</option>
-            <option value="aborted">Aborted</option>
-          </select>
-        </div>
-      </div>
+
 
       {/* Experiments Table */}
       <div className="bg-white shadow overflow-hidden sm:rounded-md">
@@ -214,11 +234,11 @@ export function Experiments() {
                   Experiment Parameters
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Schedule Status
+                  Repetitions Status
                 </th>
                 {canManageExperiments && (
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Scheduled Date/Time
+                    Manage Repetitions
                   </th>
                 )}
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -258,30 +278,76 @@ export function Experiments() {
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadgeColor(experiment.schedule_status)}`}>
-                      {experiment.schedule_status}
-                    </span>
+                    {(() => {
+                      const repetitions = experimentRepetitions[experiment.id] || []
+                      const summary = getRepetitionStatusSummary(repetitions)
+                      return (
+                        <div className="space-y-1">
+                          <div className="text-xs text-gray-600">
+                            {summary.total} total • {summary.scheduled} scheduled • {summary.pending} pending
+                          </div>
+                          <div className="flex space-x-1">
+                            {summary.scheduled > 0 && (
+                              <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+                                {summary.scheduled} scheduled
+                              </span>
+                            )}
+                            {summary.pending > 0 && (
+                              <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                                {summary.pending} pending
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      )
+                    })()}
                   </td>
                   {canManageExperiments && (
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      <div className="flex items-center space-x-2">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            handleScheduleExperiment(experiment)
-                          }}
-                          className="text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50 transition-colors"
-                          title="Schedule"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                          </svg>
-                        </button>
-                        {experiment.scheduled_date && (
-                          <span className="text-xs">
-                            {new Date(experiment.scheduled_date).toLocaleString()}
-                          </span>
-                        )}
+                      <div className="space-y-2">
+                        {(() => {
+                          const repetitions = experimentRepetitions[experiment.id] || []
+                          return repetitions.map((repetition) => (
+                            <div key={repetition.id} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                              <span className="text-sm font-medium">Rep #{repetition.repetition_number}</span>
+                              <div className="flex items-center space-x-2">
+                                <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadgeColor(repetition.schedule_status)}`}>
+                                  {repetition.schedule_status === 'pending schedule' ? 'Pending' : repetition.schedule_status}
+                                </span>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    handleScheduleRepetition(experiment, repetition)
+                                  }}
+                                  className="text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50 transition-colors"
+                                  title={repetition.schedule_status === 'scheduled' ? 'Reschedule' : 'Schedule'}
+                                >
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                  </svg>
+                                </button>
+                              </div>
+                            </div>
+                          ))
+                        })()}
+                        {(() => {
+                          const repetitions = experimentRepetitions[experiment.id] || []
+                          const missingReps = experiment.reps_required - repetitions.length
+                          if (missingReps > 0) {
+                            return (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleCreateRepetition(experiment, repetitions.length + 1)
+                                }}
+                                className="w-full text-sm text-blue-600 hover:text-blue-900 py-1 px-2 border border-blue-300 rounded hover:bg-blue-50 transition-colors"
+                              >
+                                + Add Rep #{repetitions.length + 1}
+                              </button>
+                            )
+                          }
+                          return null
+                        })()}
                       </div>
                     </td>
                   )}
@@ -292,8 +358,8 @@ export function Experiments() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${experiment.completion_status
-                        ? 'bg-green-100 text-green-800'
-                        : 'bg-yellow-100 text-yellow-800'
+                      ? 'bg-green-100 text-green-800'
+                      : 'bg-yellow-100 text-yellow-800'
                       }`}>
                       {experiment.completion_status ? 'Completed' : 'In Progress'}
                     </span>
@@ -340,11 +406,9 @@ export function Experiments() {
             </svg>
             <h3 className="mt-2 text-sm font-medium text-gray-900">No experiments found</h3>
             <p className="mt-1 text-sm text-gray-500">
-              {filterStatus === 'all'
-                ? 'Get started by creating your first experiment.'
-                : `No experiments with status "${filterStatus}".`}
+              Get started by creating your first experiment.
             </p>
-            {canManageExperiments && filterStatus === 'all' && (
+            {canManageExperiments && (
               <div className="mt-6">
                 <button
                   onClick={handleCreateExperiment}
@@ -367,12 +431,13 @@ export function Experiments() {
         />
       )}
 
-      {/* Schedule Modal */}
-      {showScheduleModal && schedulingExperiment && (
-        <ScheduleModal
-          experiment={schedulingExperiment}
-          onClose={() => setShowScheduleModal(false)}
-          onScheduleUpdated={handleScheduleUpdated}
+      {/* Repetition Schedule Modal */}
+      {showRepetitionScheduleModal && schedulingRepetition && (
+        <RepetitionScheduleModal
+          experiment={schedulingRepetition.experiment}
+          repetition={schedulingRepetition.repetition}
+          onClose={() => setShowRepetitionScheduleModal(false)}
+          onScheduleUpdated={handleRepetitionScheduleUpdated}
         />
       )}
     </div>

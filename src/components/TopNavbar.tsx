@@ -22,6 +22,8 @@ export function TopNavbar({ user, onLogout, currentView = 'dashboard' }: TopNavb
         return 'Analytics'
       case 'data-entry':
         return 'Data Entry'
+      case 'vision-system':
+        return 'Vision System'
       default:
         return 'Dashboard'
     }

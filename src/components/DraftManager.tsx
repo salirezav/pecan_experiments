@@ -1,9 +1,21 @@
-import { type ExperimentDataEntry } from '../lib/supabase'
+// DEPRECATED: This component is deprecated in favor of PhaseDraftManager
+
+// Temporary type for backward compatibility
+interface LegacyDataEntry {
+  id: string
+  experiment_id: string
+  user_id: string
+  status: 'draft' | 'submitted'
+  entry_name?: string | null
+  created_at: string
+  updated_at: string
+  submitted_at?: string | null
+}
 
 interface DraftManagerProps {
-  userDataEntries: ExperimentDataEntry[]
-  selectedDataEntry: ExperimentDataEntry | null
-  onSelectEntry: (entry: ExperimentDataEntry) => void
+  userDataEntries: LegacyDataEntry[]
+  selectedDataEntry: LegacyDataEntry | null
+  onSelectEntry: (entry: LegacyDataEntry) => void
   onDeleteDraft: (entryId: string) => void
   onCreateNew: () => void
   onClose: () => void
@@ -64,11 +76,10 @@ export function DraftManager({
               {drafts.map((entry) => (
                 <div
                   key={entry.id}
-                  className={`border rounded-lg p-4 ${
-                    selectedDataEntry?.id === entry.id
-                      ? 'border-blue-500 bg-blue-50'
-                      : 'border-gray-200 hover:border-gray-300'
-                  }`}
+                  className={`border rounded-lg p-4 ${selectedDataEntry?.id === entry.id
+                    ? 'border-blue-500 bg-blue-50'
+                    : 'border-gray-200 hover:border-gray-300'
+                    }`}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex-1">

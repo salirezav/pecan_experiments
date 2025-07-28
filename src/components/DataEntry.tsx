@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react'
-import { experimentManagement, userManagement, type Experiment, type User } from '../lib/supabase'
-import { DataEntryInterface } from './DataEntryInterface'
+import { experimentManagement, repetitionManagement, userManagement, type Experiment, type ExperimentRepetition, type User } from '../lib/supabase'
+import { RepetitionDataEntryInterface } from './RepetitionDataEntryInterface'
 
 export function DataEntry() {
   const [experiments, setExperiments] = useState<Experiment[]>([])
-  const [selectedExperiment, setSelectedExperiment] = useState<Experiment | null>(null)
+  const [experimentRepetitions, setExperimentRepetitions] = useState<Record<string, ExperimentRepetition[]>>({})
+  const [selectedRepetition, setSelectedRepetition] = useState<{ experiment: Experiment; repetition: ExperimentRepetition } | null>(null)
   const [currentUser, setCurrentUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -25,6 +26,19 @@ export function DataEntry() {
 
       setExperiments(experimentsData)
       setCurrentUser(userData)
+
+      // Load repetitions for each experiment
+      const repetitionsMap: Record<string, ExperimentRepetition[]> = {}
+      for (const experiment of experimentsData) {
+        try {
+          const repetitions = await repetitionManagement.getExperimentRepetitions(experiment.id)
+          repetitionsMap[experiment.id] = repetitions
+        } catch (err) {
+          console.error(`Failed to load repetitions for experiment ${experiment.id}:`, err)
+          repetitionsMap[experiment.id] = []
+        }
+      }
+      setExperimentRepetitions(repetitionsMap)
     } catch (err: any) {
       setError(err.message || 'Failed to load data')
       console.error('Load data error:', err)
@@ -33,12 +47,49 @@ export function DataEntry() {
     }
   }
 
-  const handleExperimentSelect = (experiment: Experiment) => {
-    setSelectedExperiment(experiment)
+  const handleRepetitionSelect = (experiment: Experiment, repetition: ExperimentRepetition) => {
+    setSelectedRepetition({ experiment, repetition })
   }
 
   const handleBackToList = () => {
-    setSelectedExperiment(null)
+    setSelectedRepetition(null)
+  }
+
+  const getAllRepetitionsWithExperiments = () => {
+    const allRepetitions: Array<{ experiment: Experiment; repetition: ExperimentRepetition }> = []
+
+    experiments.forEach(experiment => {
+      const repetitions = experimentRepetitions[experiment.id] || []
+      repetitions.forEach(repetition => {
+        allRepetitions.push({ experiment, repetition })
+      })
+    })
+
+    return allRepetitions
+  }
+
+  const categorizeRepetitions = () => {
+    const allRepetitions = getAllRepetitionsWithExperiments()
+    const now = new Date()
+
+    const past = allRepetitions.filter(({ repetition }) =>
+      repetition.completion_status || (repetition.scheduled_date && new Date(repetition.scheduled_date) < now)
+    )
+
+    const inProgress = allRepetitions.filter(({ repetition }) =>
+      !repetition.completion_status &&
+      repetition.scheduled_date &&
+      new Date(repetition.scheduled_date) <= now &&
+      new Date(repetition.scheduled_date) > new Date(now.getTime() - 24 * 60 * 60 * 1000)
+    )
+
+    const upcoming = allRepetitions.filter(({ repetition }) =>
+      !repetition.completion_status &&
+      repetition.scheduled_date &&
+      new Date(repetition.scheduled_date) > now
+    )
+
+    return { past, inProgress, upcoming }
   }
 
   if (loading) {
@@ -64,10 +115,11 @@ export function DataEntry() {
     )
   }
 
-  if (selectedExperiment) {
+  if (selectedRepetition) {
     return (
-      <DataEntryInterface
-        experiment={selectedExperiment}
+      <RepetitionDataEntryInterface
+        experiment={selectedRepetition.experiment}
+        repetition={selectedRepetition.repetition}
         currentUser={currentUser!}
         onBack={handleBackToList}
       />
@@ -79,76 +131,197 @@ export function DataEntry() {
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Data Entry</h1>
         <p className="mt-1 text-sm text-gray-500">
-          Select an experiment to enter measurement data
+          Select a repetition to enter measurement data
         </p>
       </div>
 
-      {/* Experiments List */}
-      <div className="bg-white shadow overflow-hidden sm:rounded-md">
-        <div className="px-4 py-5 sm:px-6">
-          <h3 className="text-lg leading-6 font-medium text-gray-900">
-            Available Experiments ({experiments.length})
-          </h3>
-          <p className="mt-1 max-w-2xl text-sm text-gray-500">
-            Click on any experiment to start entering data
-          </p>
-        </div>
+      {/* Repetitions organized by status - flat list */}
+      {(() => {
+        const { past: pastRepetitions, inProgress: inProgressRepetitions, upcoming: upcomingRepetitions } = categorizeRepetitions()
 
-        {experiments.length === 0 ? (
-          <div className="px-4 py-5 sm:px-6">
-            <div className="text-center text-gray-500">
-              No experiments available for data entry
+        return (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Past/Completed Repetitions */}
+            <div className="bg-white shadow overflow-hidden sm:rounded-lg">
+              <div className="px-4 py-5 sm:px-6 border-b border-gray-200">
+                <h2 className="text-xl font-bold text-gray-900 flex items-center">
+                  <span className="w-4 h-4 bg-green-500 rounded-full mr-3"></span>
+                  Past/Completed ({pastRepetitions.length})
+                </h2>
+                <p className="mt-1 text-sm text-gray-500">
+                  Completed or past scheduled repetitions
+                </p>
+              </div>
+              <div className="p-4">
+                <div className="space-y-3 max-h-96 overflow-y-auto">
+                  {pastRepetitions.map(({ experiment, repetition }) => (
+                    <RepetitionCard
+                      key={repetition.id}
+                      experiment={experiment}
+                      repetition={repetition}
+                      onSelect={handleRepetitionSelect}
+                      status="past"
+                    />
+                  ))}
+                  {pastRepetitions.length === 0 && (
+                    <p className="text-sm text-gray-500 italic text-center py-8">
+                      No completed repetitions
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* In Progress Repetitions */}
+            <div className="bg-white shadow overflow-hidden sm:rounded-lg">
+              <div className="px-4 py-5 sm:px-6 border-b border-gray-200">
+                <h2 className="text-xl font-bold text-gray-900 flex items-center">
+                  <span className="w-4 h-4 bg-blue-500 rounded-full mr-3"></span>
+                  In Progress ({inProgressRepetitions.length})
+                </h2>
+                <p className="mt-1 text-sm text-gray-500">
+                  Currently scheduled or active repetitions
+                </p>
+              </div>
+              <div className="p-4">
+                <div className="space-y-3 max-h-96 overflow-y-auto">
+                  {inProgressRepetitions.map(({ experiment, repetition }) => (
+                    <RepetitionCard
+                      key={repetition.id}
+                      experiment={experiment}
+                      repetition={repetition}
+                      onSelect={handleRepetitionSelect}
+                      status="in-progress"
+                    />
+                  ))}
+                  {inProgressRepetitions.length === 0 && (
+                    <p className="text-sm text-gray-500 italic text-center py-8">
+                      No repetitions in progress
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Upcoming Repetitions */}
+            <div className="bg-white shadow overflow-hidden sm:rounded-lg">
+              <div className="px-4 py-5 sm:px-6 border-b border-gray-200">
+                <h2 className="text-xl font-bold text-gray-900 flex items-center">
+                  <span className="w-4 h-4 bg-yellow-500 rounded-full mr-3"></span>
+                  Upcoming ({upcomingRepetitions.length})
+                </h2>
+                <p className="mt-1 text-sm text-gray-500">
+                  Future scheduled repetitions
+                </p>
+              </div>
+              <div className="p-4">
+                <div className="space-y-3 max-h-96 overflow-y-auto">
+                  {upcomingRepetitions.map(({ experiment, repetition }) => (
+                    <RepetitionCard
+                      key={repetition.id}
+                      experiment={experiment}
+                      repetition={repetition}
+                      onSelect={handleRepetitionSelect}
+                      status="upcoming"
+                    />
+                  ))}
+                  {upcomingRepetitions.length === 0 && (
+                    <p className="text-sm text-gray-500 italic text-center py-8">
+                      No upcoming repetitions
+                    </p>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
-        ) : (
-          <ul className="divide-y divide-gray-200">
-            {experiments.map((experiment) => (
-              <li key={experiment.id}>
-                <button
-                  onClick={() => handleExperimentSelect(experiment)}
-                  className="w-full text-left px-4 py-4 hover:bg-gray-50 focus:outline-none focus:bg-gray-50 transition-colors"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center">
-                        <div className="text-sm font-medium text-gray-900">
-                          Experiment #{experiment.experiment_number}
-                        </div>
-                        <div className="ml-2 flex-shrink-0">
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${experiment.completion_status
-                              ? 'bg-green-100 text-green-800'
-                              : 'bg-yellow-100 text-yellow-800'
-                            }`}>
-                            {experiment.completion_status ? 'Completed' : 'In Progress'}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="mt-1 text-sm text-gray-500">
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                          <div>Reps: {experiment.reps_required}</div>
-                          <div>Soaking: {experiment.soaking_duration_hr}h</div>
-                          <div>Drying: {experiment.air_drying_time_min}min</div>
-                          <div>Status: {experiment.schedule_status}</div>
-                        </div>
-                        {experiment.scheduled_date && (
-                          <div className="mt-1 text-xs text-gray-400">
-                            Scheduled: {new Date(experiment.scheduled_date).toLocaleString()}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    <div className="ml-4 flex-shrink-0">
-                      <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                      </svg>
-                    </div>
-                  </div>
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
+        )
+      })()}
+
+      {experiments.length === 0 && (
+        <div className="text-center py-12">
+          <div className="text-gray-500">
+            No experiments available for data entry
+          </div>
+        </div>
+      )}
     </div>
+  )
+}
+
+// RepetitionCard component for displaying individual repetitions
+interface RepetitionCardProps {
+  experiment: Experiment
+  repetition: ExperimentRepetition
+  onSelect: (experiment: Experiment, repetition: ExperimentRepetition) => void
+  status: 'past' | 'in-progress' | 'upcoming'
+}
+
+function RepetitionCard({ experiment, repetition, onSelect, status }: RepetitionCardProps) {
+  const getStatusColor = () => {
+    switch (status) {
+      case 'past':
+        return 'border-green-200 bg-green-50 hover:bg-green-100'
+      case 'in-progress':
+        return 'border-blue-200 bg-blue-50 hover:bg-blue-100'
+      case 'upcoming':
+        return 'border-yellow-200 bg-yellow-50 hover:bg-yellow-100'
+      default:
+        return 'border-gray-200 bg-gray-50 hover:bg-gray-100'
+    }
+  }
+
+  const getStatusIcon = () => {
+    switch (status) {
+      case 'past':
+        return '✓'
+      case 'in-progress':
+        return '▶'
+      case 'upcoming':
+        return '⏰'
+      default:
+        return '○'
+    }
+  }
+
+  return (
+    <button
+      onClick={() => onSelect(experiment, repetition)}
+      className={`w-full text-left p-4 border-2 rounded-lg hover:shadow-lg transition-all duration-200 ${getStatusColor()}`}
+    >
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center space-x-3">
+          {/* Large, bold experiment number */}
+          <span className="text-2xl font-bold text-gray-900">
+            #{experiment.experiment_number}
+          </span>
+          {/* Smaller repetition number */}
+          <span className="text-lg font-semibold text-gray-700">
+            Rep #{repetition.repetition_number}
+          </span>
+          <span className="text-lg">{getStatusIcon()}</span>
+        </div>
+        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${repetition.schedule_status === 'scheduled'
+          ? 'bg-blue-100 text-blue-800'
+          : 'bg-yellow-100 text-yellow-800'
+          }`}>
+          {repetition.schedule_status === 'pending schedule' ? 'Pending' : repetition.schedule_status}
+        </span>
+      </div>
+
+      {/* Experiment details */}
+      <div className="text-sm text-gray-600 mb-2">
+        {experiment.soaking_duration_hr}h soaking • {experiment.air_drying_time_min}min drying
+      </div>
+
+      {repetition.scheduled_date && (
+        <div className="text-sm text-gray-600 mb-2">
+          <strong>Scheduled:</strong> {new Date(repetition.scheduled_date).toLocaleString()}
+        </div>
+      )}
+
+      <div className="text-xs text-gray-500">
+        Click to enter data for this repetition
+      </div>
+    </button>
   )
 }

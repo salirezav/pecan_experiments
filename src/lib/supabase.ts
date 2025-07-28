@@ -38,14 +38,14 @@ export interface Experiment {
   throughput_rate_pecans_sec: number
   crush_amount_in: number
   entry_exit_height_diff_in: number
-  schedule_status: ScheduleStatus
   results_status: ResultsStatus
   completion_status: boolean
-  scheduled_date?: string | null
   created_at: string
   updated_at: string
   created_by: string
 }
+
+
 
 export interface CreateExperimentRequest {
   experiment_number: number
@@ -56,10 +56,8 @@ export interface CreateExperimentRequest {
   throughput_rate_pecans_sec: number
   crush_amount_in: number
   entry_exit_height_diff_in: number
-  schedule_status?: ScheduleStatus
   results_status?: ResultsStatus
   completion_status?: boolean
-  scheduled_date?: string | null
 }
 
 export interface UpdateExperimentRequest {
@@ -71,25 +69,54 @@ export interface UpdateExperimentRequest {
   throughput_rate_pecans_sec?: number
   crush_amount_in?: number
   entry_exit_height_diff_in?: number
-  schedule_status?: ScheduleStatus
   results_status?: ResultsStatus
   completion_status?: boolean
+}
+
+export interface CreateRepetitionRequest {
+  experiment_id: string
+  repetition_number: number
   scheduled_date?: string | null
+  schedule_status?: ScheduleStatus
+}
+
+export interface UpdateRepetitionRequest {
+  scheduled_date?: string | null
+  schedule_status?: ScheduleStatus
+  completion_status?: boolean
 }
 
 // Data Entry System Interfaces
-export type DataEntryStatus = 'draft' | 'submitted'
+export type PhaseDraftStatus = 'draft' | 'submitted' | 'withdrawn'
 export type ExperimentPhase = 'pre-soaking' | 'air-drying' | 'cracking' | 'shelling'
 
-export interface ExperimentDataEntry {
+export interface ExperimentPhaseDraft {
   id: string
   experiment_id: string
+  repetition_id: string
   user_id: string
-  status: DataEntryStatus
-  entry_name?: string | null
+  phase_name: ExperimentPhase
+  status: PhaseDraftStatus
+  draft_name?: string | null
   created_at: string
   updated_at: string
   submitted_at?: string | null
+  withdrawn_at?: string | null
+}
+
+export interface ExperimentRepetition {
+  id: string
+  experiment_id: string
+  repetition_number: number
+  scheduled_date?: string | null
+  schedule_status: ScheduleStatus
+  completion_status: boolean
+  is_locked: boolean
+  locked_at?: string | null
+  locked_by?: string | null
+  created_at: string
+  updated_at: string
+  created_by: string
 }
 
 export interface PecanDiameterMeasurement {
@@ -102,7 +129,7 @@ export interface PecanDiameterMeasurement {
 
 export interface ExperimentPhaseData {
   id: string
-  data_entry_id: string
+  phase_draft_id: string
   phase_name: ExperimentPhase
 
   // Pre-soaking phase
@@ -141,15 +168,17 @@ export interface ExperimentPhaseData {
   diameter_measurements?: PecanDiameterMeasurement[]
 }
 
-export interface CreateDataEntryRequest {
+export interface CreatePhaseDraftRequest {
   experiment_id: string
-  entry_name?: string
-  status?: DataEntryStatus
+  repetition_id: string
+  phase_name: ExperimentPhase
+  draft_name?: string
+  status?: PhaseDraftStatus
 }
 
-export interface UpdateDataEntryRequest {
-  entry_name?: string
-  status?: DataEntryStatus
+export interface UpdatePhaseDraftRequest {
+  draft_name?: string
+  status?: PhaseDraftStatus
 }
 
 export interface CreatePhaseDataRequest {
@@ -440,25 +469,7 @@ export const experimentManagement = {
     return data
   },
 
-  // Schedule an experiment
-  async scheduleExperiment(id: string, scheduledDate: string): Promise<Experiment> {
-    const updates: UpdateExperimentRequest = {
-      scheduled_date: scheduledDate,
-      schedule_status: 'scheduled'
-    }
 
-    return this.updateExperiment(id, updates)
-  },
-
-  // Remove experiment schedule
-  async removeExperimentSchedule(id: string): Promise<Experiment> {
-    const updates: UpdateExperimentRequest = {
-      scheduled_date: null,
-      schedule_status: 'pending schedule'
-    }
-
-    return this.updateExperiment(id, updates)
-  },
 
   // Check if experiment number is unique
   async isExperimentNumberUnique(experimentNumber: number, excludeId?: string): Promise<boolean> {
@@ -478,45 +489,237 @@ export const experimentManagement = {
   }
 }
 
-// Data Entry Management
-export const dataEntryManagement = {
-  // Get all data entries for an experiment
-  async getDataEntriesForExperiment(experimentId: string): Promise<ExperimentDataEntry[]> {
+// Experiment Repetitions Management
+export const repetitionManagement = {
+  // Get all repetitions for an experiment
+  async getExperimentRepetitions(experimentId: string): Promise<ExperimentRepetition[]> {
     const { data, error } = await supabase
-      .from('experiment_data_entries')
+      .from('experiment_repetitions')
       .select('*')
       .eq('experiment_id', experimentId)
+      .order('repetition_number', { ascending: true })
+
+    if (error) throw error
+    return data
+  },
+
+  // Create a new repetition
+  async createRepetition(repetitionData: CreateRepetitionRequest): Promise<ExperimentRepetition> {
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    if (authError || !user) throw new Error('User not authenticated')
+
+    const { data, error } = await supabase
+      .from('experiment_repetitions')
+      .insert({
+        ...repetitionData,
+        created_by: user.id
+      })
+      .select()
+      .single()
+
+    if (error) throw error
+    return data
+  },
+
+  // Update a repetition
+  async updateRepetition(id: string, updates: UpdateRepetitionRequest): Promise<ExperimentRepetition> {
+    const { data, error } = await supabase
+      .from('experiment_repetitions')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single()
+
+    if (error) throw error
+    return data
+  },
+
+  // Schedule a repetition
+  async scheduleRepetition(id: string, scheduledDate: string): Promise<ExperimentRepetition> {
+    const updates: UpdateRepetitionRequest = {
+      scheduled_date: scheduledDate,
+      schedule_status: 'scheduled'
+    }
+
+    return this.updateRepetition(id, updates)
+  },
+
+  // Remove repetition schedule
+  async removeRepetitionSchedule(id: string): Promise<ExperimentRepetition> {
+    const updates: UpdateRepetitionRequest = {
+      scheduled_date: null,
+      schedule_status: 'pending schedule'
+    }
+
+    return this.updateRepetition(id, updates)
+  },
+
+  // Delete a repetition
+  async deleteRepetition(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('experiment_repetitions')
+      .delete()
+      .eq('id', id)
+
+    if (error) throw error
+  },
+
+  // Get repetitions by status
+  async getRepetitionsByStatus(scheduleStatus?: ScheduleStatus): Promise<ExperimentRepetition[]> {
+    let query = supabase.from('experiment_repetitions').select('*')
+
+    if (scheduleStatus) {
+      query = query.eq('schedule_status', scheduleStatus)
+    }
+
+    const { data, error } = await query.order('created_at', { ascending: false })
+
+    if (error) throw error
+    return data
+  },
+
+  // Get repetitions with experiment details
+  async getRepetitionsWithExperiments(): Promise<(ExperimentRepetition & { experiment: Experiment })[]> {
+    const { data, error } = await supabase
+      .from('experiment_repetitions')
+      .select(`
+        *,
+        experiment:experiments(*)
+      `)
       .order('created_at', { ascending: false })
 
     if (error) throw error
     return data
   },
 
-  // Get user's data entries for an experiment
-  async getUserDataEntriesForExperiment(experimentId: string, userId?: string): Promise<ExperimentDataEntry[]> {
+  // Create all repetitions for an experiment
+  async createAllRepetitions(experimentId: string): Promise<ExperimentRepetition[]> {
+    // First get the experiment to know how many reps are required
+    const { data: experiment, error: expError } = await supabase
+      .from('experiments')
+      .select('reps_required')
+      .eq('id', experimentId)
+      .single()
+
+    if (expError) throw expError
+
+    // Create repetitions for each required rep
+    const repetitions: CreateRepetitionRequest[] = []
+    for (let i = 1; i <= experiment.reps_required; i++) {
+      repetitions.push({
+        experiment_id: experimentId,
+        repetition_number: i,
+        schedule_status: 'pending schedule'
+      })
+    }
+
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) throw new Error('User not authenticated')
 
-    const targetUserId = userId || user.id
+    const { data, error } = await supabase
+      .from('experiment_repetitions')
+      .insert(repetitions.map(rep => ({
+        ...rep,
+        created_by: user.id
+      })))
+      .select()
+
+    if (error) throw error
+    return data
+  },
+
+  // Lock a repetition (admin only)
+  async lockRepetition(repetitionId: string): Promise<ExperimentRepetition> {
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    if (authError || !user) throw new Error('User not authenticated')
 
     const { data, error } = await supabase
-      .from('experiment_data_entries')
+      .from('experiment_repetitions')
+      .update({
+        is_locked: true,
+        locked_at: new Date().toISOString(),
+        locked_by: user.id
+      })
+      .eq('id', repetitionId)
+      .select()
+      .single()
+
+    if (error) throw error
+    return data
+  },
+
+  // Unlock a repetition (admin only)
+  async unlockRepetition(repetitionId: string): Promise<ExperimentRepetition> {
+    const { data, error } = await supabase
+      .from('experiment_repetitions')
+      .update({
+        is_locked: false,
+        locked_at: null,
+        locked_by: null
+      })
+      .eq('id', repetitionId)
+      .select()
+      .single()
+
+    if (error) throw error
+    return data
+  }
+}
+
+// Phase Draft Management
+export const phaseDraftManagement = {
+  // Get all phase drafts for a repetition
+  async getPhaseDraftsForRepetition(repetitionId: string): Promise<ExperimentPhaseDraft[]> {
+    const { data, error } = await supabase
+      .from('experiment_phase_drafts')
       .select('*')
-      .eq('experiment_id', experimentId)
-      .eq('user_id', targetUserId)
+      .eq('repetition_id', repetitionId)
       .order('created_at', { ascending: false })
 
     if (error) throw error
     return data
   },
 
-  // Create a new data entry
-  async createDataEntry(request: CreateDataEntryRequest): Promise<ExperimentDataEntry> {
+  // Get user's phase drafts for a repetition
+  async getUserPhaseDraftsForRepetition(repetitionId: string): Promise<ExperimentPhaseDraft[]> {
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) throw new Error('User not authenticated')
 
     const { data, error } = await supabase
-      .from('experiment_data_entries')
+      .from('experiment_phase_drafts')
+      .select('*')
+      .eq('repetition_id', repetitionId)
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+
+    if (error) throw error
+    return data
+  },
+
+  // Get user's phase drafts for a specific phase and repetition
+  async getUserPhaseDraftsForPhase(repetitionId: string, phase: ExperimentPhase): Promise<ExperimentPhaseDraft[]> {
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    if (authError || !user) throw new Error('User not authenticated')
+
+    const { data, error } = await supabase
+      .from('experiment_phase_drafts')
+      .select('*')
+      .eq('repetition_id', repetitionId)
+      .eq('user_id', user.id)
+      .eq('phase_name', phase)
+      .order('created_at', { ascending: false })
+
+    if (error) throw error
+    return data
+  },
+
+  // Create a new phase draft
+  async createPhaseDraft(request: CreatePhaseDraftRequest): Promise<ExperimentPhaseDraft> {
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    if (authError || !user) throw new Error('User not authenticated')
+
+    const { data, error } = await supabase
+      .from('experiment_phase_drafts')
       .insert({
         ...request,
         user_id: user.id
@@ -528,10 +731,10 @@ export const dataEntryManagement = {
     return data
   },
 
-  // Update a data entry
-  async updateDataEntry(id: string, updates: UpdateDataEntryRequest): Promise<ExperimentDataEntry> {
+  // Update a phase draft
+  async updatePhaseDraft(id: string, updates: UpdatePhaseDraftRequest): Promise<ExperimentPhaseDraft> {
     const { data, error } = await supabase
-      .from('experiment_data_entries')
+      .from('experiment_phase_drafts')
       .update(updates)
       .eq('id', id)
       .select()
@@ -541,65 +744,53 @@ export const dataEntryManagement = {
     return data
   },
 
-  // Delete a data entry (only drafts)
-  async deleteDataEntry(id: string): Promise<void> {
+  // Delete a phase draft (only drafts)
+  async deletePhaseDraft(id: string): Promise<void> {
     const { error } = await supabase
-      .from('experiment_data_entries')
+      .from('experiment_phase_drafts')
       .delete()
       .eq('id', id)
 
     if (error) throw error
   },
 
-  // Submit a data entry (change status from draft to submitted)
-  async submitDataEntry(id: string): Promise<ExperimentDataEntry> {
-    return this.updateDataEntry(id, { status: 'submitted' })
+  // Submit a phase draft (change status from draft to submitted)
+  async submitPhaseDraft(id: string): Promise<ExperimentPhaseDraft> {
+    return this.updatePhaseDraft(id, { status: 'submitted' })
   },
 
-  // Get phase data for a data entry
-  async getPhaseDataForEntry(dataEntryId: string): Promise<ExperimentPhaseData[]> {
+  // Withdraw a phase draft (change status from submitted to withdrawn)
+  async withdrawPhaseDraft(id: string): Promise<ExperimentPhaseDraft> {
+    return this.updatePhaseDraft(id, { status: 'withdrawn' })
+  },
+
+  // Get phase data for a phase draft
+  async getPhaseDataForDraft(phaseDraftId: string): Promise<ExperimentPhaseData | null> {
     const { data, error } = await supabase
       .from('experiment_phase_data')
       .select(`
         *,
         diameter_measurements:pecan_diameter_measurements(*)
       `)
-      .eq('data_entry_id', dataEntryId)
-      .order('phase_name')
-
-    if (error) throw error
-    return data
-  },
-
-  // Get specific phase data
-  async getPhaseData(dataEntryId: string, phaseName: ExperimentPhase): Promise<ExperimentPhaseData | null> {
-    const { data, error } = await supabase
-      .from('experiment_phase_data')
-      .select(`
-        *,
-        diameter_measurements:pecan_diameter_measurements(*)
-      `)
-      .eq('data_entry_id', dataEntryId)
-      .eq('phase_name', phaseName)
+      .eq('phase_draft_id', phaseDraftId)
       .single()
 
     if (error) {
-      if (error.code === 'PGRST116') return null // Not found
+      if (error.code === 'PGRST116') return null // No rows found
       throw error
     }
     return data
   },
 
-  // Create or update phase data
-  async upsertPhaseData(dataEntryId: string, phaseName: ExperimentPhase, phaseData: Partial<ExperimentPhaseData>): Promise<ExperimentPhaseData> {
+  // Create or update phase data for a draft
+  async upsertPhaseData(phaseDraftId: string, phaseData: Partial<ExperimentPhaseData>): Promise<ExperimentPhaseData> {
     const { data, error } = await supabase
       .from('experiment_phase_data')
       .upsert({
-        data_entry_id: dataEntryId,
-        phase_name: phaseName,
+        phase_draft_id: phaseDraftId,
         ...phaseData
       }, {
-        onConflict: 'data_entry_id,phase_name'
+        onConflict: 'phase_draft_id,phase_name'
       })
       .select()
       .single()
@@ -641,9 +832,9 @@ export const dataEntryManagement = {
   },
 
   // Auto-save draft data (for periodic saves)
-  async autoSaveDraft(dataEntryId: string, phaseName: ExperimentPhase, phaseData: Partial<ExperimentPhaseData>): Promise<void> {
+  async autoSaveDraft(phaseDraftId: string, phaseData: Partial<ExperimentPhaseData>): Promise<void> {
     try {
-      await this.upsertPhaseData(dataEntryId, phaseName, phaseData)
+      await this.upsertPhaseData(phaseDraftId, phaseData)
     } catch (error) {
       console.warn('Auto-save failed:', error)
       // Don't throw error for auto-save failures
