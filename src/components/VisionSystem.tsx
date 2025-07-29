@@ -13,6 +13,8 @@ import {
   formatDuration,
   formatUptime
 } from '../lib/visionApi'
+import { useAuth } from '../hooks/useAuth'
+import { CameraConfigModal } from './CameraConfigModal'
 
 // Memoized components to prevent unnecessary re-renders
 const SystemOverview = memo(({ systemStatus }: { systemStatus: SystemStatus }) => (
@@ -160,130 +162,207 @@ const StorageOverview = memo(({ storageStats }: { storageStats: StorageStats }) 
   </div>
 ))
 
-const CamerasStatus = memo(({ systemStatus }: { systemStatus: SystemStatus }) => (
-  <div className="bg-white shadow rounded-lg">
-    <div className="px-4 py-5 sm:px-6">
-      <h3 className="text-lg leading-6 font-medium text-gray-900">Cameras</h3>
-      <p className="mt-1 max-w-2xl text-sm text-gray-500">
-        Current status of all cameras in the system
-      </p>
-    </div>
-    <div className="border-t border-gray-200">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-6">
-        {Object.entries(systemStatus.cameras).map(([cameraName, camera]) => {
-          const friendlyName = camera.device_info?.friendly_name
-          const hasDeviceInfo = !!camera.device_info
-          const hasSerial = !!camera.device_info?.serial_number
+const CamerasStatus = memo(({
+  systemStatus,
+  onConfigureCamera,
+  onStartRecording,
+  onStopRecording,
+  onPreviewCamera
+}: {
+  systemStatus: SystemStatus,
+  onConfigureCamera: (cameraName: string) => void,
+  onStartRecording: (cameraName: string) => Promise<void>,
+  onStopRecording: (cameraName: string) => Promise<void>,
+  onPreviewCamera: (cameraName: string) => void
+}) => {
+  const { isAdmin } = useAuth()
 
-          // Determine if camera is connected based on status
-          const isConnected = camera.status === 'available' || camera.status === 'connected'
-          const hasError = camera.status === 'error'
-          const statusText = camera.status || 'unknown'
+  return (
+    <div className="bg-white shadow rounded-lg">
+      <div className="px-4 py-5 sm:px-6">
+        <h3 className="text-lg leading-6 font-medium text-gray-900">Cameras</h3>
+        <p className="mt-1 max-w-2xl text-sm text-gray-500">
+          Current status of all cameras in the system
+        </p>
+      </div>
+      <div className="border-t border-gray-200">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-6">
+          {Object.entries(systemStatus.cameras).map(([cameraName, camera]) => {
+            const friendlyName = camera.device_info?.friendly_name
+            const hasDeviceInfo = !!camera.device_info
+            const hasSerial = !!camera.device_info?.serial_number
 
-          return (
-            <div key={cameraName} className="border border-gray-200 rounded-lg p-4">
-              <div className="flex items-center justify-between mb-3">
-                <h4 className="text-lg font-medium text-gray-900">
-                  {friendlyName || cameraName}
-                  {friendlyName && (
-                    <span className="text-gray-500 text-sm font-normal ml-2">({cameraName})</span>
-                  )}
-                </h4>
-                <div className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${isConnected ? 'bg-green-100 text-green-800' :
-                  hasError ? 'bg-yellow-100 text-yellow-800' :
-                    'bg-red-100 text-red-800'
-                  }`}>
-                  {isConnected ? 'Connected' : hasError ? 'Error' : 'Disconnected'}
-                </div>
-              </div>
+            // Determine if camera is connected based on status
+            const isConnected = camera.status === 'available' || camera.status === 'connected'
+            const hasError = camera.status === 'error'
+            const statusText = camera.status || 'unknown'
 
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-gray-500">Status:</span>
-                  <span className={`font-medium ${isConnected ? 'text-green-600' :
-                    hasError ? 'text-yellow-600' :
-                      'text-red-600'
+            return (
+              <div key={cameraName} className="border border-gray-200 rounded-lg p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="text-lg font-medium text-gray-900">
+                    {friendlyName || cameraName}
+                    {friendlyName && (
+                      <span className="text-gray-500 text-sm font-normal ml-2">({cameraName})</span>
+                    )}
+                  </h4>
+                  <div className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${isConnected ? 'bg-green-100 text-green-800' :
+                    hasError ? 'bg-yellow-100 text-yellow-800' :
+                      'bg-red-100 text-red-800'
                     }`}>
-                    {statusText.charAt(0).toUpperCase() + statusText.slice(1)}
-                  </span>
+                    {isConnected ? 'Connected' : hasError ? 'Error' : 'Disconnected'}
+                  </div>
                 </div>
 
-                {camera.is_recording && (
+                <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-gray-500">Recording:</span>
-                    <span className="text-red-600 font-medium flex items-center">
-                      <div className="w-2 h-2 bg-red-500 rounded-full mr-2 animate-pulse"></div>
-                      Active
+                    <span className="text-gray-500">Status:</span>
+                    <span className={`font-medium ${isConnected ? 'text-green-600' :
+                      hasError ? 'text-yellow-600' :
+                        'text-red-600'
+                      }`}>
+                      {statusText.charAt(0).toUpperCase() + statusText.slice(1)}
                     </span>
                   </div>
-                )}
 
-                {hasDeviceInfo && (
-                  <>
-                    {camera.device_info.model && (
-                      <div className="flex justify-between">
-                        <span className="text-gray-500">Model:</span>
-                        <span className="text-gray-900">{camera.device_info.model}</span>
-                      </div>
-                    )}
-                    {hasSerial && (
-                      <div className="flex justify-between">
-                        <span className="text-gray-500">Serial:</span>
-                        <span className="text-gray-900 font-mono text-xs">{camera.device_info.serial_number}</span>
-                      </div>
-                    )}
-                    {camera.device_info.firmware_version && (
-                      <div className="flex justify-between">
-                        <span className="text-gray-500">Firmware:</span>
-                        <span className="text-gray-900 font-mono text-xs">{camera.device_info.firmware_version}</span>
-                      </div>
-                    )}
-                  </>
-                )}
-
-                {camera.last_frame_time && (
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">Last Frame:</span>
-                    <span className="text-gray-900">{new Date(camera.last_frame_time).toLocaleTimeString()}</span>
-                  </div>
-                )}
-
-                {camera.frame_rate && (
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">Frame Rate:</span>
-                    <span className="text-gray-900">{camera.frame_rate.toFixed(1)} fps</span>
-                  </div>
-                )}
-
-                {camera.last_checked && (
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">Last Checked:</span>
-                    <span className="text-gray-900">{new Date(camera.last_checked).toLocaleTimeString()}</span>
-                  </div>
-                )}
-
-                {camera.current_recording_file && (
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">Recording File:</span>
-                    <span className="text-gray-900 truncate ml-2">{camera.current_recording_file}</span>
-                  </div>
-                )}
-
-                {camera.last_error && (
-                  <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded">
-                    <div className="text-red-800 text-xs">
-                      <strong>Error:</strong> {camera.last_error}
+                  {camera.is_recording && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Recording:</span>
+                      <span className="text-red-600 font-medium flex items-center">
+                        <div className="w-2 h-2 bg-red-500 rounded-full mr-2 animate-pulse"></div>
+                        Active
+                      </span>
                     </div>
+                  )}
+
+                  {hasDeviceInfo && (
+                    <>
+                      {camera.device_info.model && (
+                        <div className="flex justify-between">
+                          <span className="text-gray-500">Model:</span>
+                          <span className="text-gray-900">{camera.device_info.model}</span>
+                        </div>
+                      )}
+                      {hasSerial && (
+                        <div className="flex justify-between">
+                          <span className="text-gray-500">Serial:</span>
+                          <span className="text-gray-900 font-mono text-xs">{camera.device_info.serial_number}</span>
+                        </div>
+                      )}
+                      {camera.device_info.firmware_version && (
+                        <div className="flex justify-between">
+                          <span className="text-gray-500">Firmware:</span>
+                          <span className="text-gray-900 font-mono text-xs">{camera.device_info.firmware_version}</span>
+                        </div>
+                      )}
+                    </>
+                  )}
+
+                  {camera.last_frame_time && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Last Frame:</span>
+                      <span className="text-gray-900">{new Date(camera.last_frame_time).toLocaleTimeString()}</span>
+                    </div>
+                  )}
+
+                  {camera.frame_rate && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Frame Rate:</span>
+                      <span className="text-gray-900">{camera.frame_rate.toFixed(1)} fps</span>
+                    </div>
+                  )}
+
+                  {camera.last_checked && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Last Checked:</span>
+                      <span className="text-gray-900">{new Date(camera.last_checked).toLocaleTimeString()}</span>
+                    </div>
+                  )}
+
+                  {camera.current_recording_file && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Recording File:</span>
+                      <span className="text-gray-900 truncate ml-2">{camera.current_recording_file}</span>
+                    </div>
+                  )}
+
+                  {camera.last_error && (
+                    <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded">
+                      <div className="text-red-800 text-xs">
+                        <strong>Error:</strong> {camera.last_error}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Camera Control Buttons */}
+                  <div className="mt-3 pt-3 border-t border-gray-200 space-y-2">
+                    {/* Recording Controls */}
+                    <div className="flex space-x-2">
+                      {!camera.is_recording ? (
+                        <button
+                          onClick={() => onStartRecording(cameraName)}
+                          disabled={!isConnected}
+                          className={`flex-1 px-3 py-2 text-sm font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 ${isConnected
+                            ? 'text-green-600 bg-green-50 border border-green-200 hover:bg-green-100 focus:ring-green-500'
+                            : 'text-gray-400 bg-gray-50 border border-gray-200 cursor-not-allowed'
+                            }`}
+                        >
+                          <svg className="w-4 h-4 inline-block mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1m4 0h1m-6 4h8m-9-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          Start Recording
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => onStopRecording(cameraName)}
+                          className="flex-1 px-3 py-2 text-sm font-medium text-red-600 bg-red-50 border border-red-200 rounded-md hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+                        >
+                          <svg className="w-4 h-4 inline-block mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 9h6v6H9z" />
+                          </svg>
+                          Stop Recording
+                        </button>
+                      )}
+                      <button
+                        onClick={() => onPreviewCamera(cameraName)}
+                        disabled={!isConnected}
+                        className={`px-3 py-2 text-sm font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 ${isConnected
+                          ? 'text-blue-600 bg-blue-50 border border-blue-200 hover:bg-blue-100 focus:ring-blue-500'
+                          : 'text-gray-400 bg-gray-50 border border-gray-200 cursor-not-allowed'
+                          }`}
+                      >
+                        <svg className="w-4 h-4 inline-block mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                        Preview
+                      </button>
+                    </div>
+
+                    {/* Admin Configuration Button */}
+                    {isAdmin() && (
+                      <button
+                        onClick={() => onConfigureCamera(cameraName)}
+                        className="w-full px-3 py-2 text-sm font-medium text-indigo-600 bg-indigo-50 border border-indigo-200 rounded-md hover:bg-indigo-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                      >
+                        <svg className="w-4 h-4 inline-block mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                        Configure Camera
+                      </button>
+                    )}
                   </div>
-                )}
+                </div>
               </div>
-            </div>
-          )
-        })}
+            )
+          })}
+        </div>
       </div>
     </div>
-  </div>
-))
+  )
+})
 
 const RecentRecordings = memo(({ recordings, systemStatus }: { recordings: Record<string, RecordingInfo>, systemStatus: SystemStatus | null }) => (
   <div className="bg-white shadow rounded-lg">
@@ -373,6 +452,11 @@ export function VisionSystem() {
   const [lastUpdateTime, setLastUpdateTime] = useState<Date | null>(null)
   const [mqttStatus, setMqttStatus] = useState<MqttStatus | null>(null)
   const [mqttEvents, setMqttEvents] = useState<MqttEvent[]>([])
+
+  // Camera configuration modal state
+  const [configModalOpen, setConfigModalOpen] = useState(false)
+  const [selectedCamera, setSelectedCamera] = useState<string | null>(null)
+  const [notification, setNotification] = useState<{ type: 'success' | 'error', message: string } | null>(null)
 
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
 
@@ -485,6 +569,22 @@ export function VisionSystem() {
       setRefreshing(false)
     }
   }, [systemStatus])
+
+  // Camera configuration handlers
+  const handleConfigureCamera = (cameraName: string) => {
+    setSelectedCamera(cameraName)
+    setConfigModalOpen(true)
+  }
+
+  const handleConfigSuccess = (message: string) => {
+    setNotification({ type: 'success', message })
+    setTimeout(() => setNotification(null), 5000)
+  }
+
+  const handleConfigError = (message: string) => {
+    setNotification({ type: 'error', message })
+    setTimeout(() => setNotification(null), 5000)
+  }
 
   const getStatusColor = (status: string, isRecording: boolean = false) => {
     // If camera is recording, always show red regardless of status
@@ -641,7 +741,7 @@ export function VisionSystem() {
 
 
       {/* Cameras Status */}
-      {systemStatus && <CamerasStatus systemStatus={systemStatus} />}
+      {systemStatus && <CamerasStatus systemStatus={systemStatus} onConfigureCamera={handleConfigureCamera} />}
 
       {/* Machines Status */}
       {systemStatus && Object.keys(systemStatus.machines).length > 0 && (
@@ -697,6 +797,58 @@ export function VisionSystem() {
 
       {/* Recent Recordings */}
       {Object.keys(recordings).length > 0 && <RecentRecordings recordings={recordings} systemStatus={systemStatus} />}
+
+      {/* Camera Configuration Modal */}
+      {selectedCamera && (
+        <CameraConfigModal
+          cameraName={selectedCamera}
+          isOpen={configModalOpen}
+          onClose={() => {
+            setConfigModalOpen(false)
+            setSelectedCamera(null)
+          }}
+          onSuccess={handleConfigSuccess}
+          onError={handleConfigError}
+        />
+      )}
+
+      {/* Notification */}
+      {notification && (
+        <div className={`fixed top-4 right-4 z-50 p-4 rounded-md shadow-lg ${notification.type === 'success'
+          ? 'bg-green-50 border border-green-200 text-green-800'
+          : 'bg-red-50 border border-red-200 text-red-800'
+          }`}>
+          <div className="flex items-center">
+            <div className="flex-shrink-0">
+              {notification.type === 'success' ? (
+                <svg className="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </svg>
+              ) : (
+                <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                </svg>
+              )}
+            </div>
+            <div className="ml-3">
+              <p className="text-sm font-medium">{notification.message}</p>
+            </div>
+            <div className="ml-auto pl-3">
+              <button
+                onClick={() => setNotification(null)}
+                className={`inline-flex rounded-md p-1.5 focus:outline-none focus:ring-2 focus:ring-offset-2 ${notification.type === 'success'
+                  ? 'text-green-500 hover:bg-green-100 focus:ring-green-600'
+                  : 'text-red-500 hover:bg-red-100 focus:ring-red-600'
+                  }`}
+              >
+                <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

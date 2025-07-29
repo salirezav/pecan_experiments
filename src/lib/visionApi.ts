@@ -40,6 +40,12 @@ export interface CameraStatus {
   recording_start_time?: string | null
   last_frame_time?: string
   frame_rate?: number
+  // NEW AUTO-RECORDING FIELDS
+  auto_recording_enabled: boolean
+  auto_recording_active: boolean
+  auto_recording_failure_count: number
+  auto_recording_last_attempt?: string
+  auto_recording_last_error?: string
 }
 
 export interface RecordingInfo {
@@ -96,6 +102,16 @@ export interface StopRecordingResponse {
   duration_seconds: number
 }
 
+export interface StreamStartResponse {
+  success: boolean
+  message: string
+}
+
+export interface StreamStopResponse {
+  success: boolean
+  message: string
+}
+
 export interface CameraTestResponse {
   success: boolean
   message: string
@@ -109,6 +125,83 @@ export interface CameraRecoveryResponse {
   camera_name: string
   operation: string
   timestamp: string
+}
+
+// Auto-Recording Response Types
+export interface AutoRecordingConfigResponse {
+  success: boolean
+  message: string
+  camera_name: string
+  enabled: boolean
+}
+
+export interface AutoRecordingStatusResponse {
+  running: boolean
+  auto_recording_enabled: boolean
+  retry_queue: Record<string, any>
+  enabled_cameras: string[]
+}
+
+// Camera Configuration Types
+export interface CameraConfig {
+  name: string
+  machine_topic: string
+  storage_path: string
+  enabled: boolean
+  auto_record_on_machine_start: boolean
+  // NEW AUTO-RECORDING CONFIG FIELDS (optional for backward compatibility)
+  auto_start_recording_enabled?: boolean
+  auto_recording_max_retries?: number
+  auto_recording_retry_delay_seconds?: number
+  exposure_ms: number
+  gain: number
+  target_fps: number
+  sharpness: number
+  contrast: number
+  saturation: number
+  gamma: number
+  noise_filter_enabled: boolean
+  denoise_3d_enabled: boolean
+  auto_white_balance: boolean
+  color_temperature_preset: number
+  anti_flicker_enabled: boolean
+  light_frequency: number
+  bit_depth: number
+  hdr_enabled: boolean
+  hdr_gain_mode: number
+}
+
+export interface CameraConfigUpdate {
+  auto_record_on_machine_start?: boolean
+  auto_start_recording_enabled?: boolean
+  auto_recording_max_retries?: number
+  auto_recording_retry_delay_seconds?: number
+  exposure_ms?: number
+  gain?: number
+  target_fps?: number
+  sharpness?: number
+  contrast?: number
+  saturation?: number
+  gamma?: number
+  noise_filter_enabled?: boolean
+  denoise_3d_enabled?: boolean
+  auto_white_balance?: boolean
+  color_temperature_preset?: number
+  anti_flicker_enabled?: boolean
+  light_frequency?: number
+  hdr_enabled?: boolean
+  hdr_gain_mode?: number
+}
+
+export interface CameraConfigUpdateResponse {
+  success: boolean
+  message: string
+  updated_settings: string[]
+}
+
+export interface CameraConfigApplyResponse {
+  success: boolean
+  message: string
 }
 
 export interface MqttMessage {
@@ -239,6 +332,23 @@ class VisionApiClient {
     })
   }
 
+  // Streaming control
+  async startStream(cameraName: string): Promise<StreamStartResponse> {
+    return this.request(`/cameras/${cameraName}/start-stream`, {
+      method: 'POST',
+    })
+  }
+
+  async stopStream(cameraName: string): Promise<StreamStopResponse> {
+    return this.request(`/cameras/${cameraName}/stop-stream`, {
+      method: 'POST',
+    })
+  }
+
+  getStreamUrl(cameraName: string): string {
+    return `${this.baseUrl}/cameras/${cameraName}/stream`
+  }
+
   // Camera diagnostics
   async testCameraConnection(cameraName: string): Promise<CameraTestResponse> {
     return this.request(`/cameras/${cameraName}/test-connection`, {
@@ -274,6 +384,84 @@ class VisionApiClient {
     return this.request(`/cameras/${cameraName}/reinitialize`, {
       method: 'POST',
     })
+  }
+
+  // Camera configuration
+  async getCameraConfig(cameraName: string): Promise<CameraConfig> {
+    try {
+      const config = await this.request(`/cameras/${cameraName}/config`) as any
+
+      // Ensure auto-recording fields have default values if missing
+      return {
+        ...config,
+        auto_start_recording_enabled: config.auto_start_recording_enabled ?? false,
+        auto_recording_max_retries: config.auto_recording_max_retries ?? 3,
+        auto_recording_retry_delay_seconds: config.auto_recording_retry_delay_seconds ?? 5
+      }
+    } catch (error: any) {
+      // If the error is related to missing auto-recording fields, try to handle it gracefully
+      if (error.message?.includes('auto_start_recording_enabled') ||
+          error.message?.includes('auto_recording_max_retries') ||
+          error.message?.includes('auto_recording_retry_delay_seconds')) {
+
+        // Try to get the raw camera data and add default auto-recording fields
+        try {
+          const response = await fetch(`${this.baseUrl}/cameras/${cameraName}/config`, {
+            headers: {
+              'Content-Type': 'application/json',
+            }
+          })
+
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+          }
+
+          const rawConfig = await response.json()
+
+          // Add missing auto-recording fields with defaults
+          return {
+            ...rawConfig,
+            auto_start_recording_enabled: false,
+            auto_recording_max_retries: 3,
+            auto_recording_retry_delay_seconds: 5
+          }
+        } catch (fallbackError) {
+          throw new Error(`Failed to load camera configuration: ${error.message}`)
+        }
+      }
+
+      throw error
+    }
+  }
+
+  async updateCameraConfig(cameraName: string, config: CameraConfigUpdate): Promise<CameraConfigUpdateResponse> {
+    return this.request(`/cameras/${cameraName}/config`, {
+      method: 'PUT',
+      body: JSON.stringify(config),
+    })
+  }
+
+  async applyCameraConfig(cameraName: string): Promise<CameraConfigApplyResponse> {
+    return this.request(`/cameras/${cameraName}/apply-config`, {
+      method: 'POST',
+    })
+  }
+
+  // Auto-Recording endpoints
+  async enableAutoRecording(cameraName: string): Promise<AutoRecordingConfigResponse> {
+    return this.request(`/cameras/${cameraName}/auto-recording/enable`, {
+      method: 'POST',
+    })
+  }
+
+  async disableAutoRecording(cameraName: string): Promise<AutoRecordingConfigResponse> {
+    return this.request(`/cameras/${cameraName}/auto-recording/disable`, {
+      method: 'POST',
+    })
+  }
+
+  async getAutoRecordingStatus(): Promise<AutoRecordingStatusResponse> {
+    return this.request('/auto-recording/status')
   }
 
   // Recording sessions

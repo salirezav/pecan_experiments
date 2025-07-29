@@ -149,7 +149,8 @@ GET http://localhost:8000/cameras
 #       "serial_number": "ABC123"
 #     },
 #     "current_recording_file": null,
-#     "recording_start_time": null
+#     "recording_start_time": null,
+#     "auto_record_on_machine_start": false
 #   }
 # }
 

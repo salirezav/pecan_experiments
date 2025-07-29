@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Camera Configuration Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+
+        .success {
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+        }
+
+        .error {
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+            color: #721c24;
+        }
+
+        .loading {
+            background-color: #d1ecf1;
+            border-color: #bee5eb;
+            color: #0c5460;
+        }
+
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        button:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+        }
+
+        pre {
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Camera Configuration API Test</h1>
+    <p>This page tests the camera configuration API to verify the auto-recording fields issue is resolved.</p>
+
+    <div class="test-section">
+        <h3>Test Camera Configuration API</h3>
+        <button onclick="testCameraConfig()">Test Camera Config</button>
+        <button onclick="testCameraList()">Test Camera List</button>
+        <button onclick="testApiFixMethod()">Test API Fix Method</button>
+        <div id="test-results"></div>
+    </div>
+
+    <script src="test-api-fix.js"></script>
+    <script>
+        const API_BASE = 'http://vision:8000'; // Change to your vision API URL if different
+
+        async function testCameraList() {
+            const resultsDiv = document.getElementById('test-results');
+            resultsDiv.innerHTML = '<div class="loading">Testing camera list...</div>';
+
+            try {
+                const response = await fetch(`${API_BASE}/cameras`);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const cameras = await response.json();
+
+                resultsDiv.innerHTML = `
+                    <div class="success">
+                        <h4>✅ Camera List Success</h4>
+                        <p>Found ${Object.keys(cameras).length} cameras:</p>
+                        <pre>${JSON.stringify(cameras, null, 2)}</pre>
+                    </div>
+                `;
+
+                // Store camera names for config test
+                window.availableCameras = Object.keys(cameras);
+
+            } catch (error) {
+                resultsDiv.innerHTML = `
+                    <div class="error">
+                        <h4>❌ Camera List Failed</h4>
+                        <p>Error: ${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        async function testCameraConfig() {
+            const resultsDiv = document.getElementById('test-results');
+
+            // First get camera list if we don't have it
+            if (!window.availableCameras) {
+                await testCameraList();
+                if (!window.availableCameras || window.availableCameras.length === 0) {
+                    return;
+                }
+            }
+
+            const cameraName = window.availableCameras[0]; // Use first camera
+            resultsDiv.innerHTML = `<div class="loading">Testing camera configuration for ${cameraName}...</div>`;
+
+            try {
+                const response = await fetch(`${API_BASE}/cameras/${cameraName}/config`);
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}\n${errorText}`);
+                }
+
+                const config = await response.json();
+
+                // Check if auto-recording fields are present
+                const hasAutoRecordingFields =
+                    'auto_start_recording_enabled' in config ||
+                    'auto_recording_max_retries' in config ||
+                    'auto_recording_retry_delay_seconds' in config;
+
+                resultsDiv.innerHTML = `
+                    <div class="success">
+                        <h4>✅ Camera Configuration Success</h4>
+                        <p>Camera: ${cameraName}</p>
+                        <p>Auto-recording fields present: ${hasAutoRecordingFields ? 'Yes' : 'No'}</p>
+                        <details>
+                            <summary>Full Configuration</summary>
+                            <pre>${JSON.stringify(config, null, 2)}</pre>
+                        </details>
+                    </div>
+                `;
+
+            } catch (error) {
+                resultsDiv.innerHTML = `
+                    <div class="error">
+                        <h4>❌ Camera Configuration Failed</h4>
+                        <p>Camera: ${cameraName}</p>
+                        <p>Error: ${error.message}</p>
+                        <details>
+                            <summary>Error Details</summary>
+                            <pre>${error.stack || error.toString()}</pre>
+                        </details>
+                    </div>
+                `;
+            }
+        }
+
+        async function testApiFixMethod() {
+            const resultsDiv = document.getElementById('test-results');
+            resultsDiv.innerHTML = '<div class="loading">Testing API fix method...</div>';
+
+            try {
+                const api = new TestVisionApiClient();
+
+                // Get cameras first
+                const cameras = await api.getCameras();
+                const cameraNames = Object.keys(cameras);
+
+                if (cameraNames.length === 0) {
+                    throw new Error('No cameras found');
+                }
+
+                const cameraName = cameraNames[0];
+                const config = await api.getCameraConfig(cameraName);
+
+                resultsDiv.innerHTML = `
+                    <div class="success">
+                        <h4>✅ API Fix Method Success</h4>
+                        <p>Camera: ${cameraName}</p>
+                        <p>Auto-recording fields:</p>
+                        <ul>
+                            <li>auto_start_recording_enabled: ${config.auto_start_recording_enabled}</li>
+                            <li>auto_recording_max_retries: ${config.auto_recording_max_retries}</li>
+                            <li>auto_recording_retry_delay_seconds: ${config.auto_recording_retry_delay_seconds}</li>
+                        </ul>
+                        <details>
+                            <summary>Full Configuration</summary>
+                            <pre>${JSON.stringify(config, null, 2)}</pre>
+                        </details>
+                    </div>
+                `;
+
+            } catch (error) {
+                resultsDiv.innerHTML = `
+                    <div class="error">
+                        <h4>❌ API Fix Method Failed</h4>
+                        <p>Error: ${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Auto-run camera list test on page load
+        window.addEventListener('load', () => {
+            testCameraList();
+        });
+    </script>
+</body>
+
+</html>

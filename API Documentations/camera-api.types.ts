@@ -16,7 +16,7 @@ export interface ApiConfig {
 }
 
 export const defaultApiConfig: ApiConfig = {
-  baseUrl: 'http://localhost:8000',
+  baseUrl: 'http://vision:8000',  // Production default, change to 'http://localhost:8000' for development
   timeout: 10000,
   refreshInterval: 30000,
 };
@@ -204,17 +204,17 @@ export interface CameraApiClient {
   // System endpoints
   getHealth(): Promise<HealthResponse>;
   getSystemStatus(): Promise<SystemStatusResponse>;
-  
+
   // Camera endpoints
   getCameras(): Promise<CameraListResponse>;
   getCameraStatus(cameraName: string): Promise<CameraInfo>;
   testCameraConnection(cameraName: string): Promise<{ success: boolean; message: string }>;
-  
+
   // Streaming endpoints
   startStream(cameraName: string): Promise<StreamStartResponse>;
   stopStream(cameraName: string): Promise<StreamStopResponse>;
   getStreamUrl(cameraName: string): string;
-  
+
   // Recording endpoints
   startRecording(cameraName: string, options?: StartRecordingRequest): Promise<StartRecordingResponse>;
   stopRecording(cameraName: string): Promise<StopRecordingResponse>;
@@ -291,14 +291,14 @@ export interface CameraContextValue {
   streamingState: StreamingState;
   recordingState: RecordingState;
   apiClient: CameraApiClient;
-  
+
   // Actions
   startStream: (cameraName: string) => Promise<CameraActionResult>;
   stopStream: (cameraName: string) => Promise<CameraActionResult>;
   startRecording: (cameraName: string, options?: StartRecordingRequest) => Promise<CameraActionResult>;
   stopRecording: (cameraName: string) => Promise<CameraActionResult>;
   refreshCameras: () => Promise<void>;
-  
+
   // State
   loading: boolean;
   error: string | null;

@@ -7,11 +7,17 @@ This guide is specifically designed for AI assistants to understand and implemen
 The USDA Vision Camera system provides live video streaming through REST API endpoints. The streaming uses MJPEG format which is natively supported by HTML `<img>` tags and can be easily integrated into React components.
 
 ### Key Characteristics:
-- **Base URL**: `http://localhost:8000` (configurable)
+- **Base URL**: `http://vision:8000` (production) or `http://localhost:8000` (development)
 - **Stream Format**: MJPEG (Motion JPEG)
 - **Content-Type**: `multipart/x-mixed-replace; boundary=frame`
 - **Authentication**: None (add if needed for production)
 - **CORS**: Enabled for all origins (configure for production)
+
+### Base URL Configuration:
+- **Production**: `http://vision:8000` (requires hostname setup)
+- **Development**: `http://localhost:8000` (local testing)
+- **Custom IP**: `http://192.168.1.100:8000` (replace with actual IP)
+- **Custom hostname**: Configure DNS or /etc/hosts as needed
 
 ## 🔌 API Endpoints Reference
 
@@ -71,7 +77,7 @@ GET /cameras/{camera_name}/stream
 ```jsx
 import React, { useState, useEffect } from 'react';
 
-const CameraStream = ({ cameraName, apiBaseUrl = 'http://localhost:8000' }) => {
+const CameraStream = ({ cameraName, apiBaseUrl = 'http://vision:8000' }) => {
   const [isStreaming, setIsStreaming] = useState(false);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -221,7 +227,7 @@ export default CameraStream;
 import React, { useState, useEffect } from 'react';
 import CameraStream from './CameraStream';
 
-const CameraDashboard = ({ apiBaseUrl = 'http://localhost:8000' }) => {
+const CameraDashboard = ({ apiBaseUrl = 'http://vision:8000' }) => {
   const [cameras, setCameras] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -309,7 +315,7 @@ export default CameraDashboard;
 ```jsx
 import { useState, useEffect, useCallback } from 'react';
 
-const useCameraStream = (cameraName, apiBaseUrl = 'http://localhost:8000') => {
+const useCameraStream = (cameraName, apiBaseUrl = 'http://vision:8000') => {
   const [isStreaming, setIsStreaming] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -444,18 +450,41 @@ const CameraStreamTailwind = ({ cameraName }) => {
 
 ### Environment Variables (.env)
 ```env
-REACT_APP_CAMERA_API_URL=http://localhost:8000
+# Production configuration (using 'vision' hostname)
+REACT_APP_CAMERA_API_URL=http://vision:8000
 REACT_APP_STREAM_REFRESH_INTERVAL=30000
 REACT_APP_STREAM_TIMEOUT=10000
+
+# Development configuration (using localhost)
+# REACT_APP_CAMERA_API_URL=http://localhost:8000
+
+# Custom IP configuration
+# REACT_APP_CAMERA_API_URL=http://192.168.1.100:8000
 ```
 
 ### API Configuration
 ```javascript
 const apiConfig = {
-  baseUrl: process.env.REACT_APP_CAMERA_API_URL || 'http://localhost:8000',
+  baseUrl: process.env.REACT_APP_CAMERA_API_URL || 'http://vision:8000',
   timeout: parseInt(process.env.REACT_APP_STREAM_TIMEOUT) || 10000,
   refreshInterval: parseInt(process.env.REACT_APP_STREAM_REFRESH_INTERVAL) || 30000,
 };
+```
+
+### Hostname Setup Guide
+```bash
+# Option 1: Add to /etc/hosts (Linux/Mac)
+echo "127.0.0.1 vision" | sudo tee -a /etc/hosts
+
+# Option 2: Add to hosts file (Windows)
+# Add to C:\Windows\System32\drivers\etc\hosts:
+# 127.0.0.1 vision
+
+# Option 3: Configure DNS
+# Point 'vision' hostname to your server's IP address
+
+# Verify hostname resolution
+ping vision
 ```
 
 ## 🚨 Important Implementation Notes

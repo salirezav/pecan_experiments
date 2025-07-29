@@ -1,10 +1,16 @@
 ### USDA Vision Camera Streaming API
-### Base URL: http://localhost:8000
-### 
+###
+### CONFIGURATION:
+### - Production: http://vision:8000 (requires hostname setup)
+### - Development: http://localhost:8000
+### - Custom: Update @baseUrl below to match your setup
+###
 ### This file contains streaming-specific API endpoints for live camera preview
 ### Use with VS Code REST Client extension or similar tools.
 
-@baseUrl = http://localhost:8000
+# Base URL - Update to match your configuration
+@baseUrl = http://vision:8000
+# Alternative: @baseUrl = http://localhost:8000
 
 ### =============================================================================
 ### STREAMING ENDPOINTS (NEW FUNCTIONALITY)
@@ -298,3 +304,221 @@ Content-Type: application/json
 # - JPEG quality set to 70% (configurable)
 # - Each stream uses additional CPU/memory
 # - Multiple concurrent streams may impact performance
+
+### =============================================================================
+### CAMERA CONFIGURATION ENDPOINTS (NEW)
+### =============================================================================
+
+### Get camera configuration
+GET {{baseUrl}}/cameras/camera1/config
+
+### Expected Response:
+# {
+#   "name": "camera1",
+#   "machine_topic": "vibratory_conveyor",
+#   "storage_path": "/storage/camera1",
+#   "enabled": true,
+#   "exposure_ms": 1.0,
+#   "gain": 3.5,
+#   "target_fps": 0,
+#   "sharpness": 120,
+#   "contrast": 110,
+#   "saturation": 100,
+#   "gamma": 100,
+#   "noise_filter_enabled": true,
+#   "denoise_3d_enabled": false,
+#   "auto_white_balance": true,
+#   "color_temperature_preset": 0,
+#   "anti_flicker_enabled": true,
+#   "light_frequency": 1,
+#   "bit_depth": 8,
+#   "hdr_enabled": false,
+#   "hdr_gain_mode": 0
+# }
+
+###
+
+### Update basic camera settings (real-time, no restart required)
+PUT {{baseUrl}}/cameras/camera1/config
+Content-Type: application/json
+
+{
+  "exposure_ms": 2.0,
+  "gain": 4.0,
+  "target_fps": 10.0
+}
+
+###
+
+### Update image quality settings
+PUT {{baseUrl}}/cameras/camera1/config
+Content-Type: application/json
+
+{
+  "sharpness": 150,
+  "contrast": 120,
+  "saturation": 110,
+  "gamma": 90
+}
+
+###
+
+### Update advanced settings
+PUT {{baseUrl}}/cameras/camera1/config
+Content-Type: application/json
+
+{
+  "anti_flicker_enabled": true,
+  "light_frequency": 1,
+  "auto_white_balance": false,
+  "color_temperature_preset": 2
+}
+
+###
+
+### Enable HDR mode
+PUT {{baseUrl}}/cameras/camera1/config
+Content-Type: application/json
+
+{
+  "hdr_enabled": true,
+  "hdr_gain_mode": 1
+}
+
+###
+
+### Update noise reduction settings (requires restart)
+PUT {{baseUrl}}/cameras/camera1/config
+Content-Type: application/json
+
+{
+  "noise_filter_enabled": false,
+  "denoise_3d_enabled": true
+}
+
+###
+
+### Apply configuration (restart camera with new settings)
+POST {{baseUrl}}/cameras/camera1/apply-config
+
+### Expected Response:
+# {
+#   "success": true,
+#   "message": "Configuration applied to camera camera1"
+# }
+
+###
+
+### Get camera2 configuration
+GET {{baseUrl}}/cameras/camera2/config
+
+###
+
+### Update camera2 for outdoor lighting
+PUT {{baseUrl}}/cameras/camera2/config
+Content-Type: application/json
+
+{
+  "exposure_ms": 0.5,
+  "gain": 2.0,
+  "sharpness": 130,
+  "contrast": 115,
+  "anti_flicker_enabled": true,
+  "light_frequency": 1
+}
+
+### =============================================================================
+### CONFIGURATION TESTING SCENARIOS
+### =============================================================================
+
+### Scenario 1: Low light optimization
+PUT {{baseUrl}}/cameras/camera1/config
+Content-Type: application/json
+
+{
+  "exposure_ms": 5.0,
+  "gain": 8.0,
+  "noise_filter_enabled": true,
+  "denoise_3d_enabled": true
+}
+
+###
+
+### Scenario 2: High speed capture
+PUT {{baseUrl}}/cameras/camera1/config
+Content-Type: application/json
+
+{
+  "exposure_ms": 0.2,
+  "gain": 1.0,
+  "target_fps": 30.0,
+  "sharpness": 180
+}
+
+###
+
+### Scenario 3: Color accuracy for food inspection
+PUT {{baseUrl}}/cameras/camera1/config
+Content-Type: application/json
+
+{
+  "auto_white_balance": false,
+  "color_temperature_preset": 1,
+  "saturation": 120,
+  "contrast": 105,
+  "gamma": 95
+}
+
+###
+
+### Scenario 4: HDR for high contrast scenes
+PUT {{baseUrl}}/cameras/camera1/config
+Content-Type: application/json
+
+{
+  "hdr_enabled": true,
+  "hdr_gain_mode": 2,
+  "exposure_ms": 1.0,
+  "gain": 3.0
+}
+
+### =============================================================================
+### ERROR TESTING FOR CONFIGURATION
+### =============================================================================
+
+### Test invalid camera name
+GET {{baseUrl}}/cameras/invalid_camera/config
+
+###
+
+### Test invalid exposure range
+PUT {{baseUrl}}/cameras/camera1/config
+Content-Type: application/json
+
+{
+  "exposure_ms": 2000.0
+}
+
+### Expected: HTTP 422 validation error
+
+###
+
+### Test invalid gain range
+PUT {{baseUrl}}/cameras/camera1/config
+Content-Type: application/json
+
+{
+  "gain": 50.0
+}
+
+### Expected: HTTP 422 validation error
+
+###
+
+### Test empty configuration update
+PUT {{baseUrl}}/cameras/camera1/config
+Content-Type: application/json
+
+{}
+
+### Expected: HTTP 400 "No configuration updates provided"
