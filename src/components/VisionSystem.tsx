@@ -15,6 +15,7 @@ import {
 } from '../lib/visionApi'
 import { useAuth } from '../hooks/useAuth'
 import { CameraConfigModal } from './CameraConfigModal'
+import { CameraPreviewModal } from './CameraPreviewModal'
 
 // Memoized components to prevent unnecessary re-renders
 const SystemOverview = memo(({ systemStatus }: { systemStatus: SystemStatus }) => (
@@ -458,6 +459,10 @@ export function VisionSystem() {
   const [selectedCamera, setSelectedCamera] = useState<string | null>(null)
   const [notification, setNotification] = useState<{ type: 'success' | 'error', message: string } | null>(null)
 
+  // Camera preview modal state
+  const [previewModalOpen, setPreviewModalOpen] = useState(false)
+  const [previewCamera, setPreviewCamera] = useState<string | null>(null)
+
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
 
   const clearAutoRefresh = useCallback(() => {
@@ -584,6 +589,50 @@ export function VisionSystem() {
   const handleConfigError = (message: string) => {
     setNotification({ type: 'error', message })
     setTimeout(() => setNotification(null), 5000)
+  }
+
+  // Recording control handlers
+  const handleStartRecording = async (cameraName: string) => {
+    try {
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
+      const filename = `manual_${cameraName}_${timestamp}.avi`
+
+      const result = await visionApi.startRecording(cameraName, { filename })
+
+      if (result.success) {
+        setNotification({ type: 'success', message: `Recording started: ${result.filename}` })
+        // Refresh data to update recording status
+        fetchData(false)
+      } else {
+        setNotification({ type: 'error', message: `Failed to start recording: ${result.message}` })
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      setNotification({ type: 'error', message: `Error starting recording: ${errorMessage}` })
+    }
+  }
+
+  const handleStopRecording = async (cameraName: string) => {
+    try {
+      const result = await visionApi.stopRecording(cameraName)
+
+      if (result.success) {
+        const duration = result.duration_seconds ? ` (${result.duration_seconds}s)` : ''
+        setNotification({ type: 'success', message: `Recording stopped${duration}` })
+        // Refresh data to update recording status
+        fetchData(false)
+      } else {
+        setNotification({ type: 'error', message: `Failed to stop recording: ${result.message}` })
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      setNotification({ type: 'error', message: `Error stopping recording: ${errorMessage}` })
+    }
+  }
+
+  const handlePreviewCamera = (cameraName: string) => {
+    setPreviewCamera(cameraName)
+    setPreviewModalOpen(true)
   }
 
   const getStatusColor = (status: string, isRecording: boolean = false) => {
@@ -741,7 +790,15 @@ export function VisionSystem() {
 
 
       {/* Cameras Status */}
-      {systemStatus && <CamerasStatus systemStatus={systemStatus} onConfigureCamera={handleConfigureCamera} />}
+      {systemStatus && (
+        <CamerasStatus
+          systemStatus={systemStatus}
+          onConfigureCamera={handleConfigureCamera}
+          onStartRecording={handleStartRecording}
+          onStopRecording={handleStopRecording}
+          onPreviewCamera={handlePreviewCamera}
+        />
+      )}
 
       {/* Machines Status */}
       {systemStatus && Object.keys(systemStatus.machines).length > 0 && (
@@ -809,6 +866,18 @@ export function VisionSystem() {
           }}
           onSuccess={handleConfigSuccess}
           onError={handleConfigError}
+        />
+      )}
+
+      {/* Camera Preview Modal */}
+      {previewCamera && (
+        <CameraPreviewModal
+          cameraName={previewCamera}
+          isOpen={previewModalOpen}
+          onClose={() => {
+            setPreviewModalOpen(false)
+            setPreviewCamera(null)
+          }}
         />
       )}
 
