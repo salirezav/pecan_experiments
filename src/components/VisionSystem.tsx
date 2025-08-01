@@ -168,13 +168,15 @@ const CamerasStatus = memo(({
   onConfigureCamera,
   onStartRecording,
   onStopRecording,
-  onPreviewCamera
+  onPreviewCamera,
+  onStopStreaming
 }: {
   systemStatus: SystemStatus,
   onConfigureCamera: (cameraName: string) => void,
   onStartRecording: (cameraName: string) => Promise<void>,
   onStopRecording: (cameraName: string) => Promise<void>,
-  onPreviewCamera: (cameraName: string) => void
+  onPreviewCamera: (cameraName: string) => void,
+  onStopStreaming: (cameraName: string) => Promise<void>
 }) => {
   const { isAdmin } = useAuth()
 
@@ -325,10 +327,14 @@ const CamerasStatus = memo(({
                           Stop Recording
                         </button>
                       )}
+                    </div>
+
+                    {/* Preview and Streaming Controls */}
+                    <div className="flex space-x-2">
                       <button
                         onClick={() => onPreviewCamera(cameraName)}
                         disabled={!isConnected}
-                        className={`px-3 py-2 text-sm font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 ${isConnected
+                        className={`flex-1 px-3 py-2 text-sm font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 ${isConnected
                           ? 'text-blue-600 bg-blue-50 border border-blue-200 hover:bg-blue-100 focus:ring-blue-500'
                           : 'text-gray-400 bg-gray-50 border border-gray-200 cursor-not-allowed'
                           }`}
@@ -339,10 +345,27 @@ const CamerasStatus = memo(({
                         </svg>
                         Preview
                       </button>
-                    </div>
 
-                    {/* Admin Configuration Button */}
-                    {isAdmin() && (
+                      <button
+                        onClick={() => onStopStreaming(cameraName)}
+                        disabled={!isConnected}
+                        className={`flex-1 px-3 py-2 text-sm font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 ${isConnected
+                          ? 'text-orange-600 bg-orange-50 border border-orange-200 hover:bg-orange-100 focus:ring-orange-500'
+                          : 'text-gray-400 bg-gray-50 border border-gray-200 cursor-not-allowed'
+                          }`}
+                      >
+                        <svg className="w-4 h-4 inline-block mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                        Stop Streaming
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Admin Configuration Button */}
+                  {isAdmin() && (
+                    <div className="mt-3 pt-3 border-t border-gray-200">
                       <button
                         onClick={() => onConfigureCamera(cameraName)}
                         className="w-full px-3 py-2 text-sm font-medium text-indigo-600 bg-indigo-50 border border-indigo-200 rounded-md hover:bg-indigo-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
@@ -353,8 +376,8 @@ const CamerasStatus = memo(({
                         </svg>
                         Configure Camera
                       </button>
-                    )}
-                  </div>
+                    </div>
+                  )}
                 </div>
               </div>
             )
@@ -617,8 +640,7 @@ export function VisionSystem() {
       const result = await visionApi.stopRecording(cameraName)
 
       if (result.success) {
-        const duration = result.duration_seconds ? ` (${result.duration_seconds}s)` : ''
-        setNotification({ type: 'success', message: `Recording stopped${duration}` })
+        setNotification({ type: 'success', message: `Recording stopped: ${result.filename}` })
         // Refresh data to update recording status
         fetchData(false)
       } else {
@@ -633,6 +655,23 @@ export function VisionSystem() {
   const handlePreviewCamera = (cameraName: string) => {
     setPreviewCamera(cameraName)
     setPreviewModalOpen(true)
+  }
+
+  const handleStopStreaming = async (cameraName: string) => {
+    try {
+      const result = await visionApi.stopStream(cameraName)
+
+      if (result.success) {
+        setNotification({ type: 'success', message: `Streaming stopped for ${cameraName}` })
+        // Refresh data to update camera status
+        fetchData(false)
+      } else {
+        setNotification({ type: 'error', message: `Failed to stop streaming: ${result.message}` })
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      setNotification({ type: 'error', message: `Error stopping stream: ${errorMessage}` })
+    }
   }
 
   const getStatusColor = (status: string, isRecording: boolean = false) => {
@@ -797,6 +836,7 @@ export function VisionSystem() {
           onStartRecording={handleStartRecording}
           onStopRecording={handleStopRecording}
           onPreviewCamera={handlePreviewCamera}
+          onStopStreaming={handleStopStreaming}
         />
       )}
 

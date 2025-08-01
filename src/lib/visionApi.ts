@@ -391,9 +391,11 @@ class VisionApiClient {
     try {
       const config = await this.request(`/cameras/${cameraName}/config`) as any
 
-      // Ensure auto-recording fields have default values if missing
+      // Map API field names to UI expected field names and ensure auto-recording fields have default values if missing
       return {
         ...config,
+        // Map auto_start_recording_enabled from API to auto_record_on_machine_start for UI
+        auto_record_on_machine_start: config.auto_start_recording_enabled ?? false,
         auto_start_recording_enabled: config.auto_start_recording_enabled ?? false,
         auto_recording_max_retries: config.auto_recording_max_retries ?? 3,
         auto_recording_retry_delay_seconds: config.auto_recording_retry_delay_seconds ?? 5
@@ -418,12 +420,14 @@ class VisionApiClient {
 
           const rawConfig = await response.json()
 
-          // Add missing auto-recording fields with defaults
+          // Add missing auto-recording fields with defaults and map field names
           return {
             ...rawConfig,
-            auto_start_recording_enabled: false,
-            auto_recording_max_retries: 3,
-            auto_recording_retry_delay_seconds: 5
+            // Map auto_start_recording_enabled from API to auto_record_on_machine_start for UI
+            auto_record_on_machine_start: rawConfig.auto_start_recording_enabled ?? false,
+            auto_start_recording_enabled: rawConfig.auto_start_recording_enabled ?? false,
+            auto_recording_max_retries: rawConfig.auto_recording_max_retries ?? 3,
+            auto_recording_retry_delay_seconds: rawConfig.auto_recording_retry_delay_seconds ?? 5
           }
         } catch (fallbackError) {
           throw new Error(`Failed to load camera configuration: ${error.message}`)
@@ -435,9 +439,19 @@ class VisionApiClient {
   }
 
   async updateCameraConfig(cameraName: string, config: CameraConfigUpdate): Promise<CameraConfigUpdateResponse> {
+    // Map UI field names to API field names
+    const apiConfig = { ...config }
+
+    // If auto_record_on_machine_start is present, map it to auto_start_recording_enabled for the API
+    if ('auto_record_on_machine_start' in config) {
+      apiConfig.auto_start_recording_enabled = config.auto_record_on_machine_start
+      // Remove the UI field name to avoid confusion
+      delete apiConfig.auto_record_on_machine_start
+    }
+
     return this.request(`/cameras/${cameraName}/config`, {
       method: 'PUT',
-      body: JSON.stringify(config),
+      body: JSON.stringify(apiConfig),
     })
   }
 

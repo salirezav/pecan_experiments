@@ -458,30 +458,17 @@ export function CameraConfigModal({ cameraName, isOpen, onClose, onSuccess, onEr
                   </div>
 
                   <div>
-                    <label className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        checked={config.auto_start_recording_enabled ?? false}
-                        onChange={(e) => updateSetting('auto_start_recording_enabled', e.target.checked)}
-                        className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                      />
-                      <span className="text-sm font-medium text-gray-700">Enhanced Auto Recording</span>
-                    </label>
-                    <p className="text-xs text-gray-500 mt-1">Advanced auto-recording with retry logic</p>
-                  </div>
-
-                  <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Max Retries: {config.auto_recording_max_retries ?? 3}
+                      Max Retries: {config.auto_recording_max_retries}
                     </label>
                     <input
                       type="range"
                       min="1"
                       max="10"
-                      value={config.auto_recording_max_retries ?? 3}
+                      step="1"
+                      value={config.auto_recording_max_retries}
                       onChange={(e) => updateSetting('auto_recording_max_retries', parseInt(e.target.value))}
                       className="w-full"
-                      disabled={!config.auto_start_recording_enabled}
                     />
                     <div className="flex justify-between text-xs text-gray-500 mt-1">
                       <span>1</span>
@@ -491,16 +478,16 @@ export function CameraConfigModal({ cameraName, isOpen, onClose, onSuccess, onEr
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Retry Delay: {config.auto_recording_retry_delay_seconds ?? 5}s
+                      Retry Delay (seconds): {config.auto_recording_retry_delay_seconds}
                     </label>
                     <input
                       type="range"
                       min="1"
                       max="30"
-                      value={config.auto_recording_retry_delay_seconds ?? 5}
+                      step="1"
+                      value={config.auto_recording_retry_delay_seconds}
                       onChange={(e) => updateSetting('auto_recording_retry_delay_seconds', parseInt(e.target.value))}
                       className="w-full"
-                      disabled={!config.auto_start_recording_enabled}
                     />
                     <div className="flex justify-between text-xs text-gray-500 mt-1">
                       <span>1s</span>
@@ -526,8 +513,6 @@ export function CameraConfigModal({ cameraName, isOpen, onClose, onSuccess, onEr
                         <li>Noise reduction settings require camera restart to take effect</li>
                         <li>Use "Apply & Restart" to apply settings that require restart</li>
                         <li>HDR mode may impact performance when enabled</li>
-                        <li>Auto-recording monitors MQTT machine state changes for automatic recording</li>
-                        <li>Enhanced auto-recording provides retry logic for failed recording attempts</li>
                       </ul>
                     </div>
                   </div>

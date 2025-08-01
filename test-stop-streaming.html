@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stop Streaming Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+
+        .success {
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+        }
+
+        .error {
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+            color: #721c24;
+        }
+
+        .loading {
+            background-color: #d1ecf1;
+            border-color: #bee5eb;
+            color: #0c5460;
+        }
+
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        button:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+        }
+
+        .stop-btn {
+            background-color: #dc3545;
+        }
+
+        .stop-btn:hover {
+            background-color: #c82333;
+        }
+
+        input, select {
+            padding: 8px;
+            margin: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🛑 Stop Streaming API Test</h1>
+    
+    <div class="test-section">
+        <h3>Test Stop Streaming Endpoint</h3>
+        <p>This test verifies that the stop streaming API endpoint works correctly.</p>
+        
+        <div>
+            <label for="cameraSelect">Select Camera:</label>
+            <select id="cameraSelect">
+                <option value="">Loading cameras...</option>
+            </select>
+            <button onclick="testStopStreaming()" class="stop-btn">Stop Streaming</button>
+        </div>
+        
+        <div id="test-results" class="test-section" style="display: none;"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>Manual API Test</h3>
+        <p>Test the API endpoint directly:</p>
+        
+        <div>
+            <input type="text" id="manualCamera" placeholder="Enter camera name (e.g., camera1)" value="camera1">
+            <button onclick="testManualStopStreaming()">Manual Stop Stream</button>
+        </div>
+        
+        <div id="manual-results" class="test-section" style="display: none;"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8000';
+        let cameras = {};
+
+        // Load cameras on page load
+        window.onload = async function() {
+            await loadCameras();
+        };
+
+        async function loadCameras() {
+            try {
+                const response = await fetch(`${API_BASE}/cameras`);
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                cameras = await response.json();
+                const select = document.getElementById('cameraSelect');
+                select.innerHTML = '<option value="">Select a camera...</option>';
+                
+                Object.keys(cameras).forEach(cameraName => {
+                    const option = document.createElement('option');
+                    option.value = cameraName;
+                    option.textContent = `${cameraName} (${cameras[cameraName].status})`;
+                    select.appendChild(option);
+                });
+                
+            } catch (error) {
+                console.error('Error loading cameras:', error);
+                const select = document.getElementById('cameraSelect');
+                select.innerHTML = '<option value="">Error loading cameras</option>';
+            }
+        }
+
+        async function testStopStreaming() {
+            const cameraName = document.getElementById('cameraSelect').value;
+            if (!cameraName) {
+                alert('Please select a camera first');
+                return;
+            }
+
+            const resultsDiv = document.getElementById('test-results');
+            resultsDiv.style.display = 'block';
+            resultsDiv.innerHTML = '<div class="loading">Testing stop streaming...</div>';
+
+            try {
+                const response = await fetch(`${API_BASE}/cameras/${cameraName}/stop-stream`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}\n${errorText}`);
+                }
+
+                const result = await response.json();
+
+                resultsDiv.innerHTML = `
+                    <div class="success">
+                        <h4>✅ Stop Streaming Success</h4>
+                        <p>Camera: ${cameraName}</p>
+                        <p>Success: ${result.success}</p>
+                        <p>Message: ${result.message}</p>
+                        <details>
+                            <summary>Full Response</summary>
+                            <pre>${JSON.stringify(result, null, 2)}</pre>
+                        </details>
+                    </div>
+                `;
+
+            } catch (error) {
+                resultsDiv.innerHTML = `
+                    <div class="error">
+                        <h4>❌ Stop Streaming Failed</h4>
+                        <p>Camera: ${cameraName}</p>
+                        <p>Error: ${error.message}</p>
+                        <details>
+                            <summary>Error Details</summary>
+                            <pre>${error.stack || error.toString()}</pre>
+                        </details>
+                    </div>
+                `;
+            }
+        }
+
+        async function testManualStopStreaming() {
+            const cameraName = document.getElementById('manualCamera').value;
+            if (!cameraName) {
+                alert('Please enter a camera name');
+                return;
+            }
+
+            const resultsDiv = document.getElementById('manual-results');
+            resultsDiv.style.display = 'block';
+            resultsDiv.innerHTML = '<div class="loading">Testing manual stop streaming...</div>';
+
+            try {
+                const response = await fetch(`${API_BASE}/cameras/${cameraName}/stop-stream`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+
+                const result = await response.json();
+
+                resultsDiv.innerHTML = `
+                    <div class="${response.ok ? 'success' : 'error'}">
+                        <h4>${response.ok ? '✅' : '❌'} Manual Stop Streaming ${response.ok ? 'Success' : 'Failed'}</h4>
+                        <p>Camera: ${cameraName}</p>
+                        <p>HTTP Status: ${response.status} ${response.statusText}</p>
+                        <p>Success: ${result.success}</p>
+                        <p>Message: ${result.message}</p>
+                        <details>
+                            <summary>Full Response</summary>
+                            <pre>${JSON.stringify(result, null, 2)}</pre>
+                        </details>
+                    </div>
+                `;
+
+            } catch (error) {
+                resultsDiv.innerHTML = `
+                    <div class="error">
+                        <h4>❌ Manual Stop Streaming Failed</h4>
+                        <p>Camera: ${cameraName}</p>
+                        <p>Error: ${error.message}</p>
+                        <details>
+                            <summary>Error Details</summary>
+                            <pre>${error.stack || error.toString()}</pre>
+                        </details>
+                    </div>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>
