@@ -77,20 +77,19 @@ const videoUrl = `/api/videos/${videoId}/stream`;
 ```json
 {
   "name": "camera1",
-  "machine_topic": "vibratory_conveyor",
+  "machine_topic": "blower_separator",
   "storage_path": "/storage/camera1",
-  "enabled": true,
-  
-  // Basic Settings
-  "exposure_ms": 1.0,
-  "gain": 3.5,
+  "exposure_ms": 0.3,
+  "gain": 4.0,
   "target_fps": 0,
-  
-  // NEW: Video Recording Settings
+  "enabled": true,
   "video_format": "mp4",
   "video_codec": "mp4v",
   "video_quality": 95,
-  
+  "auto_start_recording_enabled": true,
+  "auto_recording_max_retries": 3,
+  "auto_recording_retry_delay_seconds": 2,
+
   // ... other existing fields
 }
 ```

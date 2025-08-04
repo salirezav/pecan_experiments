@@ -1,11 +1,6 @@
 import { useState, useEffect } from 'react'
 import { visionApi, type CameraConfig, type CameraConfigUpdate } from '../lib/visionApi'
-import {
-  getAvailableCodecs,
-  validateVideoFormatConfig,
-  requiresRestart,
-  getRecommendedVideoSettings
-} from '../utils/videoFileUtils'
+
 
 interface CameraConfigModalProps {
   cameraName: string
@@ -19,12 +14,9 @@ export function CameraConfigModal({ cameraName, isOpen, onClose, onSuccess, onEr
   const [config, setConfig] = useState<CameraConfig | null>(null)
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
-  const [applying, setApplying] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [hasChanges, setHasChanges] = useState(false)
   const [originalConfig, setOriginalConfig] = useState<CameraConfig | null>(null)
-  const [videoFormatWarnings, setVideoFormatWarnings] = useState<string[]>([])
-  const [needsRestart, setNeedsRestart] = useState(false)
 
   useEffect(() => {
     if (isOpen && cameraName) {
@@ -38,13 +30,8 @@ export function CameraConfigModal({ cameraName, isOpen, onClose, onSuccess, onEr
       setError(null)
       const configData = await visionApi.getCameraConfig(cameraName)
 
-      // Ensure video format fields have default values for backward compatibility
-      const configWithDefaults = {
-        ...configData,
-        video_format: configData.video_format || 'mp4',
-        video_codec: configData.video_codec || 'mp4v',
-        video_quality: configData.video_quality ?? 95,
-      }
+      // The API should now include all fields including video format settings
+      const configWithDefaults = configData
 
       setConfig(configWithDefaults)
       setOriginalConfig(configWithDefaults)
@@ -118,20 +105,7 @@ export function CameraConfigModal({ cameraName, isOpen, onClose, onSuccess, onEr
     })
     setHasChanges(!!hasChanges)
 
-    // Check if video format changes require restart
-    if (originalConfig && (key === 'video_format' || key === 'video_codec' || key === 'video_quality')) {
-      const currentFormat = originalConfig.video_format || 'mp4'
-      const newFormat = key === 'video_format' ? value as string : newConfig.video_format || 'mp4'
-      setNeedsRestart(requiresRestart(currentFormat, newFormat))
-
-      // Validate video format configuration
-      const validation = validateVideoFormatConfig({
-        video_format: newConfig.video_format || 'mp4',
-        video_codec: newConfig.video_codec || 'mp4v',
-        video_quality: newConfig.video_quality ?? 95,
-      })
-      setVideoFormatWarnings(validation.warnings)
-    }
+    // Video format settings are read-only, no validation needed
   }
 
   const saveConfig = async () => {
@@ -180,26 +154,7 @@ export function CameraConfigModal({ cameraName, isOpen, onClose, onSuccess, onEr
     }
   }
 
-  const applyConfig = async () => {
-    try {
-      setApplying(true)
-      setError(null)
 
-      const result = await visionApi.applyCameraConfig(cameraName)
-
-      if (result.success) {
-        onSuccess?.('Configuration applied successfully. Camera restarted.')
-      } else {
-        throw new Error(result.message)
-      }
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to apply configuration'
-      setError(errorMessage)
-      onError?.(errorMessage)
-    } finally {
-      setApplying(false)
-    }
-  }
 
   const resetChanges = () => {
     if (originalConfig) {
@@ -264,6 +219,63 @@ export function CameraConfigModal({ cameraName, isOpen, onClose, onSuccess, onEr
 
           {config && !loading && (
             <div className="space-y-6">
+              {/* System Information (Read-Only) */}
+              <div>
+                <h4 className="text-md font-medium text-gray-900 mb-4">System Information</h4>
+                <div className="bg-gray-50 border border-gray-200 rounded-md p-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Camera Name</label>
+                      <div className="text-sm text-gray-900 font-medium">{config.name}</div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Machine Topic</label>
+                      <div className="text-sm text-gray-900 font-medium">{config.machine_topic}</div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Storage Path</label>
+                      <div className="text-sm text-gray-900 font-medium">{config.storage_path}</div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                      <div className="text-sm text-gray-900 font-medium">
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${config.enabled ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                          }`}>
+                          {config.enabled ? 'Enabled' : 'Disabled'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Auto-Recording Settings (Read-Only) */}
+              <div>
+                <h4 className="text-md font-medium text-gray-900 mb-4">Auto-Recording Settings</h4>
+                <div className="bg-gray-50 border border-gray-200 rounded-md p-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Auto Recording</label>
+                      <div className="text-sm text-gray-900 font-medium">
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${config.auto_start_recording_enabled ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                          }`}>
+                          {config.auto_start_recording_enabled ? 'Enabled' : 'Disabled'}
+                        </span>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Max Retries</label>
+                      <div className="text-sm text-gray-900 font-medium">{config.auto_recording_max_retries}</div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Retry Delay</label>
+                      <div className="text-sm text-gray-900 font-medium">{config.auto_recording_retry_delay_seconds}s</div>
+                    </div>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-3">Auto-recording settings are configured in the system configuration file</p>
+                </div>
+              </div>
+
               {/* Basic Settings */}
               <div>
                 <h4 className="text-md font-medium text-gray-900 mb-4">Basic Settings</h4>
@@ -441,6 +453,70 @@ export function CameraConfigModal({ cameraName, isOpen, onClose, onSuccess, onEr
                 </div>
               </div>
 
+              {/* White Balance RGB Gains */}
+              <div>
+                <h4 className="text-md font-medium text-gray-900 mb-4">White Balance RGB Gains</h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Red Gain: {config.wb_red_gain?.toFixed(2) || '1.00'}
+                    </label>
+                    <input
+                      type="range"
+                      min="0"
+                      max="3.99"
+                      step="0.01"
+                      value={config.wb_red_gain || 1.0}
+                      onChange={(e) => updateSetting('wb_red_gain', parseFloat(e.target.value))}
+                      className="w-full"
+                    />
+                    <div className="flex justify-between text-xs text-gray-500 mt-1">
+                      <span>0.00</span>
+                      <span>3.99</span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Green Gain: {config.wb_green_gain?.toFixed(2) || '1.00'}
+                    </label>
+                    <input
+                      type="range"
+                      min="0"
+                      max="3.99"
+                      step="0.01"
+                      value={config.wb_green_gain || 1.0}
+                      onChange={(e) => updateSetting('wb_green_gain', parseFloat(e.target.value))}
+                      className="w-full"
+                    />
+                    <div className="flex justify-between text-xs text-gray-500 mt-1">
+                      <span>0.00</span>
+                      <span>3.99</span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Blue Gain: {config.wb_blue_gain?.toFixed(2) || '1.00'}
+                    </label>
+                    <input
+                      type="range"
+                      min="0"
+                      max="3.99"
+                      step="0.01"
+                      value={config.wb_blue_gain || 1.0}
+                      onChange={(e) => updateSetting('wb_blue_gain', parseFloat(e.target.value))}
+                      className="w-full"
+                    />
+                    <div className="flex justify-between text-xs text-gray-500 mt-1">
+                      <span>0.00</span>
+                      <span>3.99</span>
+                    </div>
+                  </div>
+                </div>
+                <p className="text-xs text-gray-500 mt-2">Manual white balance gains (only effective when Auto White Balance is disabled)</p>
+              </div>
+
               {/* Advanced Settings */}
               <div>
                 <h4 className="text-md font-medium text-gray-900 mb-4">Advanced Settings</h4>
@@ -536,161 +612,62 @@ export function CameraConfigModal({ cameraName, isOpen, onClose, onSuccess, onEr
                 </div>
               </div>
 
-              {/* Video Recording Settings */}
+              {/* Video Recording Settings (Read-Only) */}
               <div>
                 <h4 className="text-md font-medium text-gray-900 mb-4">Video Recording Settings</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Video Format
-                    </label>
-                    <select
-                      value={config.video_format || 'mp4'}
-                      onChange={(e) => updateSetting('video_format', e.target.value)}
-                      className="w-full border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
-                    >
-                      <option value="mp4">MP4 (Recommended)</option>
-                      <option value="avi">AVI (Legacy)</option>
-                    </select>
-                    <p className="text-xs text-gray-500 mt-1">MP4 provides better web compatibility and smaller file sizes</p>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Video Codec
-                    </label>
-                    <select
-                      value={config.video_codec || 'mp4v'}
-                      onChange={(e) => updateSetting('video_codec', e.target.value)}
-                      className="w-full border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
-                    >
-                      {getAvailableCodecs(config.video_format || 'mp4').map(codec => (
-                        <option key={codec} value={codec}>{codec.toUpperCase()}</option>
-                      ))}
-                    </select>
-                    <p className="text-xs text-gray-500 mt-1">Video compression codec</p>
-                  </div>
-
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Video Quality: {config.video_quality ?? 95}%
-                    </label>
-                    <input
-                      type="range"
-                      min="50"
-                      max="100"
-                      step="5"
-                      value={config.video_quality ?? 95}
-                      onChange={(e) => updateSetting('video_quality', parseInt(e.target.value))}
-                      className="w-full"
-                    />
-                    <div className="flex justify-between text-xs text-gray-500 mt-1">
-                      <span>50% (Smaller files)</span>
-                      <span>100% (Best quality)</span>
+                <div className="bg-gray-50 border border-gray-200 rounded-md p-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Video Format
+                      </label>
+                      <div className="text-sm text-gray-900 font-medium">
+                        {config.video_format?.toUpperCase() || 'MP4'}
+                      </div>
+                      <p className="text-xs text-gray-500">Current recording format</p>
                     </div>
-                    <p className="text-xs text-gray-500 mt-1">Higher quality = larger file sizes</p>
-                  </div>
-                </div>
 
-                {/* Video Format Warnings */}
-                {videoFormatWarnings.length > 0 && (
-                  <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Video Codec
+                      </label>
+                      <div className="text-sm text-gray-900 font-medium">
+                        {config.video_codec?.toUpperCase() || 'MP4V'}
+                      </div>
+                      <p className="text-xs text-gray-500">Compression codec</p>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Video Quality
+                      </label>
+                      <div className="text-sm text-gray-900 font-medium">
+                        {config.video_quality || 95}%
+                      </div>
+                      <p className="text-xs text-gray-500">Recording quality</p>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
                     <div className="flex">
                       <div className="flex-shrink-0">
-                        <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
-                          <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                        <svg className="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
                         </svg>
                       </div>
                       <div className="ml-3">
-                        <h3 className="text-sm font-medium text-yellow-800">Video Format Warnings</h3>
-                        <div className="mt-2 text-sm text-yellow-700">
-                          <ul className="list-disc list-inside space-y-1">
-                            {videoFormatWarnings.map((warning, index) => (
-                              <li key={index}>{warning}</li>
-                            ))}
-                          </ul>
+                        <h3 className="text-sm font-medium text-blue-800">Video Format Information</h3>
+                        <div className="mt-2 text-sm text-blue-700">
+                          <p>Video recording settings are configured in the system configuration file and require a service restart to modify.</p>
+                          <p className="mt-1"><strong>Current benefits:</strong> MP4 format provides ~40% smaller file sizes and better web compatibility than AVI.</p>
                         </div>
                       </div>
                     </div>
                   </div>
-                )}
-
-                {/* Restart Warning */}
-                {needsRestart && (
-                  <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md">
-                    <div className="flex">
-                      <div className="flex-shrink-0">
-                        <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                        </svg>
-                      </div>
-                      <div className="ml-3">
-                        <h3 className="text-sm font-medium text-red-800">Restart Required</h3>
-                        <p className="mt-2 text-sm text-red-700">
-                          Video format changes require a camera service restart to take effect. Use "Apply & Restart" to apply these changes.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Auto-Recording Settings */}
-              <div>
-                <h4 className="text-md font-medium text-gray-900 mb-4">Auto-Recording Settings</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        checked={config.auto_record_on_machine_start}
-                        onChange={(e) => updateSetting('auto_record_on_machine_start', e.target.checked)}
-                        className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                      />
-                      <span className="text-sm font-medium text-gray-700">Auto Record on Machine Start</span>
-                    </label>
-                    <p className="text-xs text-gray-500 mt-1">Start recording when MQTT machine state changes to ON</p>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Max Retries: {config.auto_recording_max_retries}
-                    </label>
-                    <input
-                      type="range"
-                      min="1"
-                      max="10"
-                      step="1"
-                      value={config.auto_recording_max_retries}
-                      onChange={(e) => updateSetting('auto_recording_max_retries', parseInt(e.target.value))}
-                      className="w-full"
-                    />
-                    <div className="flex justify-between text-xs text-gray-500 mt-1">
-                      <span>1</span>
-                      <span>10</span>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Retry Delay (seconds): {config.auto_recording_retry_delay_seconds}
-                    </label>
-                    <input
-                      type="range"
-                      min="1"
-                      max="30"
-                      step="1"
-                      value={config.auto_recording_retry_delay_seconds}
-                      onChange={(e) => updateSetting('auto_recording_retry_delay_seconds', parseInt(e.target.value))}
-                      className="w-full"
-                    />
-                    <div className="flex justify-between text-xs text-gray-500 mt-1">
-                      <span>1s</span>
-                      <span>30s</span>
-                    </div>
-                  </div>
                 </div>
               </div>
+
+
 
               {/* Information */}
               <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
@@ -704,10 +681,10 @@ export function CameraConfigModal({ cameraName, isOpen, onClose, onSuccess, onEr
                     <h3 className="text-sm font-medium text-blue-800">Configuration Notes</h3>
                     <div className="mt-2 text-sm text-blue-700">
                       <ul className="list-disc list-inside space-y-1">
-                        <li>Real-time settings (exposure, gain, image quality) apply immediately</li>
-                        <li>Noise reduction settings require camera restart to take effect</li>
-                        <li>Use "Apply & Restart" to apply settings that require restart</li>
-                        <li>HDR mode may impact performance when enabled</li>
+                        <li><strong>Real-time settings:</strong> Exposure, gain, image quality, white balance - apply immediately</li>
+                        <li><strong>System settings:</strong> Video format, noise reduction, auto-recording - configured in system files</li>
+                        <li><strong>Performance:</strong> HDR mode may impact frame rate when enabled</li>
+                        <li><strong>White balance:</strong> RGB gains only effective when auto white balance is disabled</li>
                       </ul>
                     </div>
                   </div>
@@ -743,13 +720,6 @@ export function CameraConfigModal({ cameraName, isOpen, onClose, onSuccess, onEr
                   className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-md hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {saving ? 'Saving...' : 'Save Changes'}
-                </button>
-                <button
-                  onClick={applyConfig}
-                  disabled={applying}
-                  className="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {applying ? 'Applying...' : 'Apply & Restart'}
                 </button>
                 <button
                   onClick={onClose}

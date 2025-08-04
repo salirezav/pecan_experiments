@@ -41,6 +41,13 @@ Complete project overview and final status documentation. Contains:
 - Configuration interface
 - Testing checklist
 
+### 📋 [CURRENT_CONFIGURATION.md](CURRENT_CONFIGURATION.md) **⭐ NEW**
+**Complete current system configuration reference**:
+- Exact config.json structure with all current values
+- Field-by-field documentation
+- Camera-specific settings comparison
+- MQTT topics and machine mappings
+
 ### 🔧 [API_CHANGES_SUMMARY.md](API_CHANGES_SUMMARY.md)
 Summary of API changes and enhancements made to the system.
 

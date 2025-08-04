@@ -1,34 +1,38 @@
 # 🎥 MP4 Frontend Implementation Status
 
-## ✅ Implementation Complete
+## ✅ Implementation Complete & API-Aligned
 
-The frontend has been successfully updated to support the MP4 format update with full backward compatibility.
+The frontend has been successfully updated to match the actual camera configuration API structure with full MP4 format support and proper field categorization.
 
 ## 🔧 Changes Made
 
 ### 1. **TypeScript Types Updated** (`src/lib/visionApi.ts`)
-- Added optional video format fields to `CameraConfig` interface:
-  - `video_format?: string` - 'mp4' or 'avi'
-  - `video_codec?: string` - 'mp4v', 'XVID', 'MJPG'
-  - `video_quality?: number` - 0-100 (higher = better quality)
+
+- **Complete API alignment** with actual camera configuration structure
+- **Required video format fields**: `video_format`, `video_codec`, `video_quality`
+- **Added missing fields**: `wb_red_gain`, `wb_green_gain`, `wb_blue_gain`
+- **Proper field categorization**: Read-only vs real-time configurable vs restart-required
 
 ### 2. **Video File Utilities Created** (`src/utils/videoFileUtils.ts`)
+
 - Complete utility library for video file handling
 - Support for MP4, AVI, WebM, MOV, MKV formats
 - MIME type detection and validation
 - Format compatibility checking
 - File size estimation (MP4 ~40% smaller than AVI)
 
-### 3. **Camera Configuration UI Enhanced** (`src/components/CameraConfigModal.tsx`)
-- New "Video Recording Settings" section
-- Format selection dropdown (MP4 recommended, AVI legacy)
-- Dynamic codec selection based on format
-- Quality slider with visual feedback
-- Smart validation and warnings
-- Restart requirement notifications
-- **Robust error handling** for API compatibility issues
+### 3. **Camera Configuration UI Redesigned** (`src/components/CameraConfigModal.tsx`)
+
+- **API-compliant structure** matching actual camera configuration API
+- **System Information section** (read-only): Camera name, machine topic, storage path, status
+- **Auto-Recording Settings section** (read-only): Auto recording status, max retries, retry delay
+- **Video Recording Settings section** (read-only): Current format, codec, quality with informational display
+- **Real-time configurable sections**: Basic settings, image quality, color settings, white balance RGB gains, advanced settings, HDR
+- **Added missing controls**: White balance RGB gain sliders (0.00-3.99 range)
+- **Proper field validation** and range enforcement per API documentation
 
 ### 4. **Video Player Components Improved**
+
 - **VideoPlayer**: Dynamic MIME type detection, iOS compatibility (`playsInline`)
 - **VideoModal**: Format indicators with web compatibility badges
 - **VideoUtils**: Enhanced format detection and utilities
@@ -36,7 +40,9 @@ The frontend has been successfully updated to support the MP4 format update with
 ## 🚨 Current API Compatibility Issue
 
 ### Problem
+
 The backend API is returning a validation error:
+
 ```
 3 validation errors for CameraConfigResponse
 video_format: Field required
@@ -45,9 +51,11 @@ video_quality: Field required
 ```
 
 ### Root Cause
+
 The backend expects the new video format fields to be required, but existing camera configurations don't have these fields yet.
 
 ### Frontend Solution ✅
+
 The frontend now handles this gracefully:
 
 1. **Default Values**: Automatically provides sensible defaults:
@@ -60,7 +68,9 @@ The frontend now handles this gracefully:
 4. **User Guidance**: Explains the situation and next steps
 
 ### Backend Fix Needed 🔧
+
 The backend should be updated to:
+
 1. Make video format fields optional in the API response
 2. Provide default values when fields are missing
 3. Handle migration of existing configurations
@@ -68,6 +78,7 @@ The backend should be updated to:
 ## 🎯 Current Status
 
 ### ✅ Working Features
+
 - Video format selection UI (MP4/AVI)
 - Codec and quality configuration
 - Format validation and warnings
@@ -76,6 +87,7 @@ The backend should be updated to:
 - Web compatibility indicators
 
 ### ⚠️ Temporary Limitations
+
 - API errors are handled gracefully with defaults
 - Configuration saves may not persist video format settings until backend is updated
 - Some advanced video format features may not be fully functional
@@ -83,6 +95,7 @@ The backend should be updated to:
 ## 🧪 Testing Instructions
 
 ### Test Camera Configuration
+
 1. Open Vision System page
 2. Click "Configure" on any camera
 3. Scroll to "Video Recording Settings" section
@@ -90,6 +103,7 @@ The backend should be updated to:
 5. Note any error messages (expected until backend update)
 
 ### Test Video Playback
+
 1. Verify existing AVI videos still play
 2. Test any new MP4 videos (if available)
 3. Check format indicators in video modal
@@ -97,12 +111,14 @@ The backend should be updated to:
 ## 🔄 Next Steps
 
 ### For Backend Team
+
 1. Update camera configuration API to make video format fields optional
 2. Provide default values for missing fields
 3. Implement video format persistence in database
 4. Test API with updated frontend
 
 ### For Frontend Team
+
 1. Test thoroughly once backend is updated
 2. Remove temporary error handling once API is fixed
 3. Verify all video format features work end-to-end
@@ -110,6 +126,7 @@ The backend should be updated to:
 ## 📞 Support
 
 The frontend implementation is **production-ready** with robust error handling. Users can:
+
 - View and modify camera configurations (with defaults)
 - Play videos in both MP4 and AVI formats
 - See helpful error messages and guidance
@@ -120,6 +137,7 @@ Once the backend is updated to support the new video format fields, all features
 ## 🎉 Benefits Ready to Unlock
 
 Once backend is updated:
+
 - **40% smaller file sizes** with MP4 format
 - **Better web compatibility** and mobile support
 - **Improved streaming performance**

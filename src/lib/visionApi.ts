@@ -144,61 +144,73 @@ export interface AutoRecordingStatusResponse {
 
 // Camera Configuration Types
 export interface CameraConfig {
+  // READ-ONLY SYSTEM FIELDS
   name: string
   machine_topic: string
   storage_path: string
   enabled: boolean
-  auto_record_on_machine_start: boolean
-  // NEW AUTO-RECORDING CONFIG FIELDS (optional for backward compatibility)
-  auto_start_recording_enabled?: boolean
-  auto_recording_max_retries?: number
-  auto_recording_retry_delay_seconds?: number
+  // READ-ONLY AUTO-RECORDING FIELDS
+  auto_start_recording_enabled: boolean
+  auto_recording_max_retries: number
+  auto_recording_retry_delay_seconds: number
+  // BASIC SETTINGS (real-time configurable)
   exposure_ms: number
   gain: number
   target_fps: number
-  // NEW VIDEO RECORDING SETTINGS (MP4 format support)
-  video_format?: string  // 'mp4' or 'avi' (optional for backward compatibility)
-  video_codec?: string   // 'mp4v', 'XVID', 'MJPG' (optional for backward compatibility)
-  video_quality?: number // 0-100 (higher = better quality) (optional for backward compatibility)
+  // VIDEO RECORDING SETTINGS (restart required)
+  video_format: string  // 'mp4' or 'avi'
+  video_codec: string   // 'mp4v', 'XVID', 'MJPG'
+  video_quality: number // 0-100 (higher = better quality)
+  // IMAGE QUALITY SETTINGS (real-time configurable)
   sharpness: number
   contrast: number
   saturation: number
   gamma: number
-  noise_filter_enabled: boolean
-  denoise_3d_enabled: boolean
+  // COLOR SETTINGS (real-time configurable)
   auto_white_balance: boolean
   color_temperature_preset: number
+  // WHITE BALANCE RGB GAINS (real-time configurable)
+  wb_red_gain: number
+  wb_green_gain: number
+  wb_blue_gain: number
+  // ADVANCED SETTINGS
   anti_flicker_enabled: boolean
   light_frequency: number
+  // NOISE REDUCTION (restart required)
+  noise_filter_enabled: boolean
+  denoise_3d_enabled: boolean
+  // SYSTEM SETTINGS (restart required)
   bit_depth: number
+  // HDR SETTINGS (real-time configurable)
   hdr_enabled: boolean
   hdr_gain_mode: number
 }
 
 export interface CameraConfigUpdate {
-  auto_record_on_machine_start?: boolean
-  auto_start_recording_enabled?: boolean
-  auto_recording_max_retries?: number
-  auto_recording_retry_delay_seconds?: number
+  // BASIC SETTINGS (real-time configurable)
   exposure_ms?: number
   gain?: number
   target_fps?: number
-  // NEW VIDEO RECORDING SETTINGS (MP4 format support)
-  video_format?: string  // 'mp4' or 'avi'
-  video_codec?: string   // 'mp4v', 'XVID', 'MJPG'
-  video_quality?: number // 0-100 (higher = better quality)
+  // IMAGE QUALITY SETTINGS (real-time configurable)
   sharpness?: number
   contrast?: number
   saturation?: number
   gamma?: number
-  noise_filter_enabled?: boolean
-  denoise_3d_enabled?: boolean
+  // COLOR SETTINGS (real-time configurable)
   auto_white_balance?: boolean
   color_temperature_preset?: number
+  // WHITE BALANCE RGB GAINS (real-time configurable)
+  wb_red_gain?: number
+  wb_green_gain?: number
+  wb_blue_gain?: number
+  // ADVANCED SETTINGS (real-time configurable)
   anti_flicker_enabled?: boolean
   light_frequency?: number
+  // HDR SETTINGS (real-time configurable)
   hdr_enabled?: boolean
   hdr_gain_mode?: number
+  // NOTE: Video format settings and noise reduction settings are not included
+  // as they are either read-only or require restart via apply-config endpoint
 }
 
 export interface CameraConfigUpdateResponse {

@@ -41,9 +41,9 @@ GET /videos/
 {
   "videos": [
     {
-      "file_id": "camera1_recording_20250804_143022.mp4",
+      "file_id": "camera1_auto_blower_separator_20250804_143022.mp4",
       "camera_name": "camera1",
-      "filename": "camera1_recording_20250804_143022.mp4",
+      "filename": "camera1_auto_blower_separator_20250804_143022.mp4",
       "file_size_bytes": 31457280,
       "format": "mp4",
       "status": "completed",
