@@ -1,5 +1,11 @@
 import { useState, useEffect } from 'react'
 import { visionApi, type CameraConfig, type CameraConfigUpdate } from '../lib/visionApi'
+import {
+  getAvailableCodecs,
+  validateVideoFormatConfig,
+  requiresRestart,
+  getRecommendedVideoSettings
+} from '../utils/videoFileUtils'
 
 interface CameraConfigModalProps {
   cameraName: string
@@ -17,6 +23,8 @@ export function CameraConfigModal({ cameraName, isOpen, onClose, onSuccess, onEr
   const [error, setError] = useState<string | null>(null)
   const [hasChanges, setHasChanges] = useState(false)
   const [originalConfig, setOriginalConfig] = useState<CameraConfig | null>(null)
+  const [videoFormatWarnings, setVideoFormatWarnings] = useState<string[]>([])
+  const [needsRestart, setNeedsRestart] = useState(false)
 
   useEffect(() => {
     if (isOpen && cameraName) {
@@ -29,11 +37,67 @@ export function CameraConfigModal({ cameraName, isOpen, onClose, onSuccess, onEr
       setLoading(true)
       setError(null)
       const configData = await visionApi.getCameraConfig(cameraName)
-      setConfig(configData)
-      setOriginalConfig(configData)
+
+      // Ensure video format fields have default values for backward compatibility
+      const configWithDefaults = {
+        ...configData,
+        video_format: configData.video_format || 'mp4',
+        video_codec: configData.video_codec || 'mp4v',
+        video_quality: configData.video_quality ?? 95,
+      }
+
+      setConfig(configWithDefaults)
+      setOriginalConfig(configWithDefaults)
       setHasChanges(false)
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to load camera configuration'
+      let errorMessage = 'Failed to load camera configuration'
+
+      if (err instanceof Error) {
+        errorMessage = err.message
+
+        // Handle specific API validation errors for missing video format fields
+        if (err.message.includes('video_format') || err.message.includes('video_codec') || err.message.includes('video_quality')) {
+          errorMessage = 'Camera configuration is missing video format settings. This may indicate the backend needs to be updated to support MP4 format. Using default values.'
+
+          // Create a default configuration for display
+          const defaultConfig = {
+            name: cameraName,
+            machine_topic: '',
+            storage_path: '',
+            enabled: true,
+            auto_record_on_machine_start: false,
+            auto_start_recording_enabled: false,
+            auto_recording_max_retries: 3,
+            auto_recording_retry_delay_seconds: 2,
+            exposure_ms: 1.0,
+            gain: 3.5,
+            target_fps: 0,
+            video_format: 'mp4',
+            video_codec: 'mp4v',
+            video_quality: 95,
+            sharpness: 120,
+            contrast: 110,
+            saturation: 100,
+            gamma: 100,
+            noise_filter_enabled: true,
+            denoise_3d_enabled: false,
+            auto_white_balance: true,
+            color_temperature_preset: 0,
+            anti_flicker_enabled: true,
+            light_frequency: 1,
+            bit_depth: 8,
+            hdr_enabled: false,
+            hdr_gain_mode: 0,
+          }
+
+          setConfig(defaultConfig)
+          setOriginalConfig(defaultConfig)
+          setHasChanges(false)
+          setError(errorMessage)
+          return
+        }
+      }
+
       setError(errorMessage)
       onError?.(errorMessage)
     } finally {
@@ -41,7 +105,7 @@ export function CameraConfigModal({ cameraName, isOpen, onClose, onSuccess, onEr
     }
   }
 
-  const updateSetting = (key: keyof CameraConfigUpdate, value: number | boolean) => {
+  const updateSetting = (key: keyof CameraConfigUpdate, value: number | boolean | string) => {
     if (!config) return
 
     const newConfig = { ...config, [key]: value }
@@ -53,6 +117,21 @@ export function CameraConfigModal({ cameraName, isOpen, onClose, onSuccess, onEr
       return newConfig[configKey] !== originalConfig[configKey]
     })
     setHasChanges(!!hasChanges)
+
+    // Check if video format changes require restart
+    if (originalConfig && (key === 'video_format' || key === 'video_codec' || key === 'video_quality')) {
+      const currentFormat = originalConfig.video_format || 'mp4'
+      const newFormat = key === 'video_format' ? value as string : newConfig.video_format || 'mp4'
+      setNeedsRestart(requiresRestart(currentFormat, newFormat))
+
+      // Validate video format configuration
+      const validation = validateVideoFormatConfig({
+        video_format: newConfig.video_format || 'mp4',
+        video_codec: newConfig.video_codec || 'mp4v',
+        video_quality: newConfig.video_quality ?? 95,
+      })
+      setVideoFormatWarnings(validation.warnings)
+    }
   }
 
   const saveConfig = async () => {
@@ -162,7 +241,24 @@ export function CameraConfigModal({ cameraName, isOpen, onClose, onSuccess, onEr
 
           {error && (
             <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-md">
-              <p className="text-red-800">{error}</p>
+              <div className="flex">
+                <div className="flex-shrink-0">
+                  <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <h3 className="text-sm font-medium text-red-800">Configuration Error</h3>
+                  <p className="mt-2 text-sm text-red-700">{error}</p>
+                  {error.includes('video_format') && (
+                    <p className="mt-2 text-sm text-red-600">
+                      <strong>Note:</strong> The video format settings are displayed with default values.
+                      You can still modify and save the configuration, but the backend may need to be updated
+                      to fully support MP4 format settings.
+                    </p>
+                  )}
+                </div>
+              </div>
             </div>
           )}
 
@@ -438,6 +534,105 @@ export function CameraConfigModal({ cameraName, isOpen, onClose, onSuccess, onEr
                     </div>
                   </div>
                 </div>
+              </div>
+
+              {/* Video Recording Settings */}
+              <div>
+                <h4 className="text-md font-medium text-gray-900 mb-4">Video Recording Settings</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Video Format
+                    </label>
+                    <select
+                      value={config.video_format || 'mp4'}
+                      onChange={(e) => updateSetting('video_format', e.target.value)}
+                      className="w-full border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+                    >
+                      <option value="mp4">MP4 (Recommended)</option>
+                      <option value="avi">AVI (Legacy)</option>
+                    </select>
+                    <p className="text-xs text-gray-500 mt-1">MP4 provides better web compatibility and smaller file sizes</p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Video Codec
+                    </label>
+                    <select
+                      value={config.video_codec || 'mp4v'}
+                      onChange={(e) => updateSetting('video_codec', e.target.value)}
+                      className="w-full border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+                    >
+                      {getAvailableCodecs(config.video_format || 'mp4').map(codec => (
+                        <option key={codec} value={codec}>{codec.toUpperCase()}</option>
+                      ))}
+                    </select>
+                    <p className="text-xs text-gray-500 mt-1">Video compression codec</p>
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Video Quality: {config.video_quality ?? 95}%
+                    </label>
+                    <input
+                      type="range"
+                      min="50"
+                      max="100"
+                      step="5"
+                      value={config.video_quality ?? 95}
+                      onChange={(e) => updateSetting('video_quality', parseInt(e.target.value))}
+                      className="w-full"
+                    />
+                    <div className="flex justify-between text-xs text-gray-500 mt-1">
+                      <span>50% (Smaller files)</span>
+                      <span>100% (Best quality)</span>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">Higher quality = larger file sizes</p>
+                  </div>
+                </div>
+
+                {/* Video Format Warnings */}
+                {videoFormatWarnings.length > 0 && (
+                  <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+                    <div className="flex">
+                      <div className="flex-shrink-0">
+                        <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                      <div className="ml-3">
+                        <h3 className="text-sm font-medium text-yellow-800">Video Format Warnings</h3>
+                        <div className="mt-2 text-sm text-yellow-700">
+                          <ul className="list-disc list-inside space-y-1">
+                            {videoFormatWarnings.map((warning, index) => (
+                              <li key={index}>{warning}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Restart Warning */}
+                {needsRestart && (
+                  <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md">
+                    <div className="flex">
+                      <div className="flex-shrink-0">
+                        <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                      <div className="ml-3">
+                        <h3 className="text-sm font-medium text-red-800">Restart Required</h3>
+                        <p className="mt-2 text-sm text-red-700">
+                          Video format changes require a camera service restart to take effect. Use "Apply & Restart" to apply these changes.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Auto-Recording Settings */}

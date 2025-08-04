@@ -197,10 +197,18 @@ GET /cameras/{camera_name}/config
   "machine_topic": "vibratory_conveyor",
   "storage_path": "/storage/camera1",
   "enabled": true,
+  "auto_start_recording_enabled": true,
+  "auto_recording_max_retries": 3,
+  "auto_recording_retry_delay_seconds": 2,
   "exposure_ms": 1.0,
   "gain": 3.5,
   "target_fps": 3.0,
-  "auto_start_recording_enabled": true,
+
+  // Video Recording Settings
+  "video_format": "mp4",
+  "video_codec": "mp4v",
+  "video_quality": 95,
+
   "sharpness": 120,
   "contrast": 110,
   "saturation": 100,
@@ -209,6 +217,9 @@ GET /cameras/{camera_name}/config
   "denoise_3d_enabled": false,
   "auto_white_balance": true,
   "color_temperature_preset": 0,
+  "wb_red_gain": 1.0,
+  "wb_green_gain": 1.0,
+  "wb_blue_gain": 1.0,
   "anti_flicker_enabled": true,
   "light_frequency": 1,
   "bit_depth": 8,
@@ -237,7 +248,7 @@ POST /cameras/{camera_name}/apply-config
 
 **Configuration Categories**:
 - ✅ **Real-time**: `exposure_ms`, `gain`, `target_fps`, `sharpness`, `contrast`, etc.
-- ⚠️ **Restart required**: `noise_filter_enabled`, `denoise_3d_enabled`, `bit_depth`
+- ⚠️ **Restart required**: `noise_filter_enabled`, `denoise_3d_enabled`, `bit_depth`, `video_format`, `video_codec`, `video_quality`
 
 For detailed configuration options, see [Camera Configuration API Guide](api/CAMERA_CONFIG_API.md).
 
@@ -444,7 +455,7 @@ For detailed streaming integration, see [Streaming Guide](guides/STREAMING_GUIDE
 
 ### Connect to WebSocket
 ```javascript
-const ws = new WebSocket('ws://vision:8000/ws');
+const ws = new WebSocket('ws://localhost:8000/ws');
 
 ws.onmessage = (event) => {
   const update = JSON.parse(event.data);
@@ -478,24 +489,24 @@ ws.onmessage = (event) => {
 ### Basic System Monitoring
 ```bash
 # Check system health
-curl http://vision:8000/health
+curl http://localhost:8000/health
 
 # Get overall system status
-curl http://vision:8000/system/status
+curl http://localhost:8000/system/status
 
 # Get all camera statuses
-curl http://vision:8000/cameras
+curl http://localhost:8000/cameras
 ```
 
 ### Manual Recording Control
 ```bash
 # Start recording with default settings
-curl -X POST http://vision:8000/cameras/camera1/start-recording \
+curl -X POST http://localhost:8000/cameras/camera1/start-recording \
   -H "Content-Type: application/json" \
   -d '{"filename": "manual_test.avi"}'
 
 # Start recording with custom camera settings
-curl -X POST http://vision:8000/cameras/camera1/start-recording \
+curl -X POST http://localhost:8000/cameras/camera1/start-recording \
   -H "Content-Type: application/json" \
   -d '{
     "filename": "high_quality.avi",
@@ -505,28 +516,28 @@ curl -X POST http://vision:8000/cameras/camera1/start-recording \
   }'
 
 # Stop recording
-curl -X POST http://vision:8000/cameras/camera1/stop-recording
+curl -X POST http://localhost:8000/cameras/camera1/stop-recording
 ```
 
 ### Auto-Recording Management
 ```bash
 # Enable auto-recording for camera1
-curl -X POST http://vision:8000/cameras/camera1/auto-recording/enable
+curl -X POST http://localhost:8000/cameras/camera1/auto-recording/enable
 
 # Check auto-recording status
-curl http://vision:8000/auto-recording/status
+curl http://localhost:8000/auto-recording/status
 
 # Disable auto-recording for camera1
-curl -X POST http://vision:8000/cameras/camera1/auto-recording/disable
+curl -X POST http://localhost:8000/cameras/camera1/auto-recording/disable
 ```
 
 ### Camera Configuration
 ```bash
 # Get current camera configuration
-curl http://vision:8000/cameras/camera1/config
+curl http://localhost:8000/cameras/camera1/config
 
 # Update camera settings (real-time)
-curl -X PUT http://vision:8000/cameras/camera1/config \
+curl -X PUT http://localhost:8000/cameras/camera1/config \
   -H "Content-Type: application/json" \
   -d '{
     "exposure_ms": 1.5,
@@ -606,7 +617,7 @@ curl -X PUT http://vision:8000/cameras/camera1/config \
 ## 📞 Support & Integration
 
 ### API Base URL
-- **Development**: `http://vision:8000`
+- **Development**: `http://localhost:8000`
 - **Production**: Configure in `config.json` under `system.api_host` and `system.api_port`
 
 ### Error Handling

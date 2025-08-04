@@ -15,6 +15,7 @@ import {
   getStatusBadgeClass,
   getResolutionString,
   formatDuration,
+  isWebCompatible,
 } from '../utils/videoUtils';
 
 interface VideoModalProps {
@@ -103,13 +104,21 @@ export const VideoModal: React.FC<VideoModalProps> = ({
             <div className="w-full lg:w-80 bg-gray-50 overflow-y-auto">
               <div className="p-4 space-y-4">
                 {/* Status and Format */}
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-2 flex-wrap">
                   <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusBadgeClass(video.status)}`}>
                     {video.status}
                   </span>
-                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${isWebCompatible(video.format)
+                      ? 'bg-green-100 text-green-800'
+                      : 'bg-orange-100 text-orange-800'
+                    }`}>
                     {getFormatDisplayName(video.format)}
                   </span>
+                  {isWebCompatible(video.format) && (
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                      Web Compatible
+                    </span>
+                  )}
                 </div>
 
                 {/* Basic Info */}

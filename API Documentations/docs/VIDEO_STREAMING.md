@@ -5,7 +5,7 @@ The USDA Vision Camera System now includes a modular video streaming system that
 ## 🌟 Features
 
 - **HTTP Range Request Support** - Enables seeking and progressive download
-- **Web-Compatible Formats** - Automatic conversion from AVI to MP4/WebM
+- **Native MP4 Support** - Direct streaming of MP4 files with automatic AVI conversion
 - **Intelligent Caching** - Optimized streaming performance
 - **Thumbnail Generation** - Extract preview images from videos
 - **Modular Architecture** - Clean separation of concerns
@@ -41,11 +41,11 @@ GET /videos/
 {
   "videos": [
     {
-      "file_id": "camera1_recording_20250804_143022.avi",
+      "file_id": "camera1_recording_20250804_143022.mp4",
       "camera_name": "camera1",
-      "filename": "camera1_recording_20250804_143022.avi",
-      "file_size_bytes": 52428800,
-      "format": "avi",
+      "filename": "camera1_recording_20250804_143022.mp4",
+      "file_size_bytes": 31457280,
+      "format": "mp4",
       "status": "completed",
       "created_at": "2025-08-04T14:30:22",
       "is_streamable": true,

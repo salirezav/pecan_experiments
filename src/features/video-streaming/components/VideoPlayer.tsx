@@ -5,11 +5,11 @@
  * Uses the useVideoPlayer hook for state management and provides a clean interface.
  */
 
-import React, { forwardRef } from 'react';
+import React, { forwardRef, useState, useEffect } from 'react';
 import { useVideoPlayer } from '../hooks/useVideoPlayer';
 import { videoApiService } from '../services/videoApi';
 import { type VideoPlayerProps } from '../types';
-import { formatDuration } from '../utils/videoUtils';
+import { formatDuration, getVideoMimeType } from '../utils/videoUtils';
 
 export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(({
   fileId,
@@ -23,6 +23,10 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(({
   onEnded,
   onError,
 }, forwardedRef) => {
+  const [videoInfo, setVideoInfo] = useState<{ filename?: string; mimeType: string }>({
+    mimeType: 'video/mp4' // Default to MP4
+  });
+
   const { state, actions, ref } = useVideoPlayer({
     autoPlay,
     onPlay,
@@ -35,6 +39,26 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(({
   React.useImperativeHandle(forwardedRef, () => ref.current!, [ref]);
 
   const streamingUrl = videoApiService.getStreamingUrl(fileId);
+
+  // Fetch video info to determine MIME type
+  useEffect(() => {
+    const fetchVideoInfo = async () => {
+      try {
+        const info = await videoApiService.getVideoInfo(fileId);
+        if (info.file_id) {
+          // Extract filename from file_id or use a default pattern
+          const filename = info.file_id.includes('.') ? info.file_id : `${info.file_id}.mp4`;
+          const mimeType = getVideoMimeType(filename);
+          setVideoInfo({ filename, mimeType });
+        }
+      } catch (error) {
+        console.warn('Could not fetch video info, using default MIME type:', error);
+        // Keep default MP4 MIME type
+      }
+    };
+
+    fetchVideoInfo();
+  }, [fileId]);
 
   const handleSeek = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!ref.current) return;
@@ -59,8 +83,13 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(({
         className="w-full h-full bg-black"
         controls={!controls} // Use native controls if custom controls are disabled
         style={{ width, height }}
+        playsInline // Important for iOS compatibility
       >
-        <source src={streamingUrl} type="video/mp4" />
+        <source src={streamingUrl} type={videoInfo.mimeType} />
+        {/* Fallback for MP4 if original format fails */}
+        {videoInfo.mimeType !== 'video/mp4' && (
+          <source src={streamingUrl} type="video/mp4" />
+        )}
         Your browser does not support the video tag.
       </video>
 

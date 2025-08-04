@@ -1,11 +1,19 @@
 /**
  * Video Streaming Utilities
- * 
+ *
  * Pure utility functions for video operations, formatting, and data processing.
  * These functions have no side effects and can be easily tested.
+ * Enhanced with MP4 format support and improved file handling.
  */
 
 import { type VideoFile, type VideoWithMetadata } from '../types';
+import {
+  isVideoFile as isVideoFileUtil,
+  getVideoMimeType as getVideoMimeTypeUtil,
+  getVideoFormat,
+  isWebCompatibleFormat,
+  getFormatDisplayName as getFormatDisplayNameUtil
+} from '../../../utils/videoFileUtils';
 
 /**
  * Format file size in bytes to human readable format
@@ -73,6 +81,20 @@ export function getRelativeTime(dateString: string): string {
 }
 
 /**
+ * Check if a filename is a video file (supports MP4, AVI, and other formats)
+ */
+export function isVideoFile(filename: string): boolean {
+  return isVideoFileUtil(filename);
+}
+
+/**
+ * Get MIME type for video file based on filename
+ */
+export function getVideoMimeType(filename: string): string {
+  return getVideoMimeTypeUtil(filename);
+}
+
+/**
  * Extract camera name from filename if not provided
  */
 export function extractCameraName(filename: string): string {
@@ -85,23 +107,14 @@ export function extractCameraName(filename: string): string {
  * Get video format display name
  */
 export function getFormatDisplayName(format: string): string {
-  const formatMap: Record<string, string> = {
-    'avi': 'AVI',
-    'mp4': 'MP4',
-    'webm': 'WebM',
-    'mov': 'MOV',
-    'mkv': 'MKV',
-  };
-  
-  return formatMap[format.toLowerCase()] || format.toUpperCase();
+  return getFormatDisplayNameUtil(format);
 }
 
 /**
  * Check if video format is web-compatible
  */
 export function isWebCompatible(format: string): boolean {
-  const webFormats = ['mp4', 'webm', 'ogg'];
-  return webFormats.includes(format.toLowerCase());
+  return isWebCompatibleFormat(format);
 }
 
 /**

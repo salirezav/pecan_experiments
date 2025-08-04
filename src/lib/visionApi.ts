@@ -156,6 +156,10 @@ export interface CameraConfig {
   exposure_ms: number
   gain: number
   target_fps: number
+  // NEW VIDEO RECORDING SETTINGS (MP4 format support)
+  video_format?: string  // 'mp4' or 'avi' (optional for backward compatibility)
+  video_codec?: string   // 'mp4v', 'XVID', 'MJPG' (optional for backward compatibility)
+  video_quality?: number // 0-100 (higher = better quality) (optional for backward compatibility)
   sharpness: number
   contrast: number
   saturation: number
@@ -179,6 +183,10 @@ export interface CameraConfigUpdate {
   exposure_ms?: number
   gain?: number
   target_fps?: number
+  // NEW VIDEO RECORDING SETTINGS (MP4 format support)
+  video_format?: string  // 'mp4' or 'avi'
+  video_codec?: string   // 'mp4v', 'XVID', 'MJPG'
+  video_quality?: number // 0-100 (higher = better quality)
   sharpness?: number
   contrast?: number
   saturation?: number

@@ -97,11 +97,11 @@ python test_system.py
 ### Dashboard Integration
 ```javascript
 // React component example
-const systemStatus = await fetch('http://vision:8000/system/status');
-const cameras = await fetch('http://vision:8000/cameras');
+const systemStatus = await fetch('http://localhost:8000/system/status');
+const cameras = await fetch('http://localhost:8000/cameras');
 
 // WebSocket for real-time updates
-const ws = new WebSocket('ws://vision:8000/ws');
+const ws = new WebSocket('ws://localhost:8000/ws');
 ws.onmessage = (event) => {
     const update = JSON.parse(event.data);
     // Handle real-time system updates
@@ -111,13 +111,13 @@ ws.onmessage = (event) => {
 ### Manual Control
 ```bash
 # Start recording manually
-curl -X POST http://vision:8000/cameras/camera1/start-recording
+curl -X POST http://localhost:8000/cameras/camera1/start-recording
 
 # Stop recording manually  
-curl -X POST http://vision:8000/cameras/camera1/stop-recording
+curl -X POST http://localhost:8000/cameras/camera1/stop-recording
 
 # Get system status
-curl http://vision:8000/system/status
+curl http://localhost:8000/system/status
 ```
 
 ## 📊 System Capabilities
@@ -151,7 +151,7 @@ curl http://vision:8000/system/status
 ### Troubleshooting
 - **Test Suite**: `python test_system.py`
 - **Time Check**: `python check_time.py`
-- **API Health**: `curl http://vision:8000/health`
+- **API Health**: `curl http://localhost:8000/health`
 - **Debug Mode**: `python main.py --log-level DEBUG`
 
 ## 🎯 Production Readiness
