@@ -163,7 +163,7 @@ POST /cameras/{camera_name}/apply-config
 ### Example 1: Adjust Exposure and Gain
 
 ```bash
-curl -X PUT http://localhost:8000/cameras/camera1/config \
+curl -X PUT http://vision:8000/cameras/camera1/config \
   -H "Content-Type: application/json" \
   -d '{
     "exposure_ms": 1.5,
@@ -174,7 +174,7 @@ curl -X PUT http://localhost:8000/cameras/camera1/config \
 ### Example 2: Improve Image Quality
 
 ```bash
-curl -X PUT http://localhost:8000/cameras/camera1/config \
+curl -X PUT http://vision:8000/cameras/camera1/config \
   -H "Content-Type: application/json" \
   -d '{
     "sharpness": 150,
@@ -186,7 +186,7 @@ curl -X PUT http://localhost:8000/cameras/camera1/config \
 ### Example 3: Configure for Indoor Lighting
 
 ```bash
-curl -X PUT http://localhost:8000/cameras/camera1/config \
+curl -X PUT http://vision:8000/cameras/camera1/config \
   -H "Content-Type: application/json" \
   -d '{
     "anti_flicker_enabled": true,
@@ -199,7 +199,7 @@ curl -X PUT http://localhost:8000/cameras/camera1/config \
 ### Example 4: Enable HDR Mode
 
 ```bash
-curl -X PUT http://localhost:8000/cameras/camera1/config \
+curl -X PUT http://vision:8000/cameras/camera1/config \
   -H "Content-Type: application/json" \
   -d '{
     "hdr_enabled": true,
@@ -214,7 +214,7 @@ curl -X PUT http://localhost:8000/cameras/camera1/config \
 ```jsx
 import React, { useState, useEffect } from 'react';
 
-const CameraConfig = ({ cameraName, apiBaseUrl = 'http://localhost:8000' }) => {
+const CameraConfig = ({ cameraName, apiBaseUrl = 'http://vision:8000' }) => {
   const [config, setConfig] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);

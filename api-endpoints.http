@@ -1,6 +1,6 @@
 ###############################################################################
 # USDA Vision Camera System - Complete API Endpoints Documentation
-# Base URL: http://localhost:8000
+# Base URL: http://vision:8000
 ###############################################################################
 
 ###############################################################################
@@ -8,7 +8,7 @@
 ###############################################################################
 
 ### Root endpoint - API information
-GET http://localhost:8000/
+GET http://vision:8000/
 # Response: SuccessResponse
 # {
 #   "success": true,
@@ -20,7 +20,7 @@ GET http://localhost:8000/
 ###
 
 ### Health check
-GET http://localhost:8000/health
+GET http://vision:8000/health
 # Response: Simple health status
 # {
 #   "status": "healthy",
@@ -30,7 +30,7 @@ GET http://localhost:8000/health
 ###
 
 ### Get system status
-GET http://localhost:8000/system/status
+GET http://vision:8000/system/status
 # Response: SystemStatusResponse
 # {
 #   "system_started": true,
@@ -60,7 +60,7 @@ GET http://localhost:8000/system/status
 ###############################################################################
 
 ### Get all machines status
-GET http://localhost:8000/machines
+GET http://vision:8000/machines
 # Response: Dict[str, MachineStatusResponse]
 # {
 #   "vibratory_conveyor": {
@@ -84,7 +84,7 @@ GET http://localhost:8000/machines
 ###############################################################################
 
 ### Get MQTT status and statistics
-GET http://localhost:8000/mqtt/status
+GET http://vision:8000/mqtt/status
 # Response: MQTTStatusResponse
 # {
 #   "connected": true,
@@ -101,7 +101,7 @@ GET http://localhost:8000/mqtt/status
 # }
 
 ### Get recent MQTT events history
-GET http://localhost:8000/mqtt/events
+GET http://vision:8000/mqtt/events
 # Optional query parameter: limit (default: 5, max: 50)
 # Response: MQTTEventsHistoryResponse
 # {
@@ -128,14 +128,14 @@ GET http://localhost:8000/mqtt/events
 # }
 
 ### Get recent MQTT events with custom limit
-GET http://localhost:8000/mqtt/events?limit=10
+GET http://vision:8000/mqtt/events?limit=10
 
 ###############################################################################
 # CAMERA ENDPOINTS
 ###############################################################################
 
 ### Get all cameras status
-GET http://localhost:8000/cameras
+GET http://vision:8000/cameras
 # Response: Dict[str, CameraStatusResponse]
 # {
 #   "camera1": {
@@ -157,9 +157,9 @@ GET http://localhost:8000/cameras
 ###
 
 ### Get specific camera status
-GET http://localhost:8000/cameras/camera1/status
+GET http://vision:8000/cameras/camera1/status
 ### Get specific camera status
-GET http://localhost:8000/cameras/camera2/status
+GET http://vision:8000/cameras/camera2/status
 # Response: CameraStatusResponse (same as above for single camera)
 
 ###############################################################################
@@ -167,7 +167,7 @@ GET http://localhost:8000/cameras/camera2/status
 ###############################################################################
 
 ### Start recording (with all optional parameters)
-POST http://localhost:8000/cameras/camera1/start-recording
+POST http://vision:8000/cameras/camera1/start-recording
 Content-Type: application/json
 
 {
@@ -193,7 +193,7 @@ Content-Type: application/json
 ###
 
 ### Start recording (minimal - only filename)
-POST http://localhost:8000/cameras/camera1/start-recording
+POST http://vision:8000/cameras/camera1/start-recording
 Content-Type: application/json
 
 {
@@ -203,7 +203,7 @@ Content-Type: application/json
 ###
 
 ### Start recording (only camera settings)
-POST http://localhost:8000/cameras/camera1/start-recording
+POST http://vision:8000/cameras/camera1/start-recording
 Content-Type: application/json
 
 {
@@ -215,7 +215,7 @@ Content-Type: application/json
 ###
 
 ### Start recording (empty body - all defaults)
-POST http://localhost:8000/cameras/camera1/start-recording
+POST http://vision:8000/cameras/camera1/start-recording
 Content-Type: application/json
 
 {}
@@ -223,9 +223,9 @@ Content-Type: application/json
 ###
 
 ### Stop recording
-POST http://localhost:8000/cameras/camera1/stop-recording
+POST http://vision:8000/cameras/camera1/stop-recording
 ### Stop recording
-POST http://localhost:8000/cameras/camera2/stop-recording
+POST http://vision:8000/cameras/camera2/stop-recording
 # No request body required
 # Response: StopRecordingResponse
 # {
@@ -239,8 +239,8 @@ POST http://localhost:8000/cameras/camera2/stop-recording
 ###############################################################################
 
 ### Test camera connection
-POST http://localhost:8000/cameras/camera1/test-connection
-POST http://localhost:8000/cameras/camera2/test-connection
+POST http://vision:8000/cameras/camera1/test-connection
+POST http://vision:8000/cameras/camera2/test-connection
 # No request body required
 # Response: CameraTestResponse
 # {
@@ -253,8 +253,8 @@ POST http://localhost:8000/cameras/camera2/test-connection
 ###
 
 ### Reconnect camera (soft recovery)
-POST http://localhost:8000/cameras/camera1/reconnect
-POST http://localhost:8000/cameras/camera2/reconnect
+POST http://vision:8000/cameras/camera1/reconnect
+POST http://vision:8000/cameras/camera2/reconnect
 # No request body required
 # Response: CameraRecoveryResponse
 # {
@@ -268,33 +268,33 @@ POST http://localhost:8000/cameras/camera2/reconnect
 ###
 
 ### Restart camera grab process
-POST http://localhost:8000/cameras/camera1/restart-grab
-POST http://localhost:8000/cameras/camera2/restart-grab
+POST http://vision:8000/cameras/camera1/restart-grab
+POST http://vision:8000/cameras/camera2/restart-grab
 # Response: CameraRecoveryResponse (same structure as reconnect)
 
 ###
 
 ### Reset camera timestamp
-POST http://localhost:8000/cameras/camera1/reset-timestamp
-POST http://localhost:8000/cameras/camera2/reset-timestamp
+POST http://vision:8000/cameras/camera1/reset-timestamp
+POST http://vision:8000/cameras/camera2/reset-timestamp
 # Response: CameraRecoveryResponse (same structure as reconnect)
 
 ###
 
 ### Full camera reset (hard recovery)
-POST http://localhost:8000/cameras/camera1/full-reset
+POST http://vision:8000/cameras/camera1/full-reset
 ### Full camera reset (hard recovery)
 
-POST http://localhost:8000/cameras/camera2/full-reset
+POST http://vision:8000/cameras/camera2/full-reset
 # Response: CameraRecoveryResponse (same structure as reconnect)
 
 ###
 
 ### Reinitialize failed camera
-POST http://localhost:8000/cameras/camera1/reinitialize
+POST http://vision:8000/cameras/camera1/reinitialize
 ### Reinitialize failed camera
 
-POST http://localhost:8000/cameras/camera2/reinitialize
+POST http://vision:8000/cameras/camera2/reinitialize
 # Response: CameraRecoveryResponse (same structure as reconnect)
 
 ###############################################################################
@@ -302,7 +302,7 @@ POST http://localhost:8000/cameras/camera2/reinitialize
 ###############################################################################
 
 ### Get all recording sessions
-GET http://localhost:8000/recordings
+GET http://vision:8000/recordings
 # Response: Dict[str, RecordingInfoResponse]
 # {
 #   "rec_001": {
@@ -323,7 +323,7 @@ GET http://localhost:8000/recordings
 ###############################################################################
 
 ### Get storage statistics
-GET http://localhost:8000/storage/stats
+GET http://vision:8000/storage/stats
 # Response: StorageStatsResponse
 # {
 #   "base_path": "/storage",
@@ -345,7 +345,7 @@ GET http://localhost:8000/storage/stats
 ###
 
 ### Get recording files list (with filters)
-POST http://localhost:8000/storage/files
+POST http://vision:8000/storage/files
 Content-Type: application/json
 
 {
@@ -377,7 +377,7 @@ Content-Type: application/json
 ###
 
 ### Get all files (no camera filter)
-POST http://localhost:8000/storage/files
+POST http://vision:8000/storage/files
 Content-Type: application/json
 
 {
@@ -387,7 +387,7 @@ Content-Type: application/json
 ###
 
 ### Cleanup old storage files
-POST http://localhost:8000/storage/cleanup
+POST http://vision:8000/storage/cleanup
 Content-Type: application/json
 
 {

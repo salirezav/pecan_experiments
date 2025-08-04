@@ -444,7 +444,7 @@ For detailed streaming integration, see [Streaming Guide](guides/STREAMING_GUIDE
 
 ### Connect to WebSocket
 ```javascript
-const ws = new WebSocket('ws://localhost:8000/ws');
+const ws = new WebSocket('ws://vision:8000/ws');
 
 ws.onmessage = (event) => {
   const update = JSON.parse(event.data);
@@ -478,24 +478,24 @@ ws.onmessage = (event) => {
 ### Basic System Monitoring
 ```bash
 # Check system health
-curl http://localhost:8000/health
+curl http://vision:8000/health
 
 # Get overall system status
-curl http://localhost:8000/system/status
+curl http://vision:8000/system/status
 
 # Get all camera statuses
-curl http://localhost:8000/cameras
+curl http://vision:8000/cameras
 ```
 
 ### Manual Recording Control
 ```bash
 # Start recording with default settings
-curl -X POST http://localhost:8000/cameras/camera1/start-recording \
+curl -X POST http://vision:8000/cameras/camera1/start-recording \
   -H "Content-Type: application/json" \
   -d '{"filename": "manual_test.avi"}'
 
 # Start recording with custom camera settings
-curl -X POST http://localhost:8000/cameras/camera1/start-recording \
+curl -X POST http://vision:8000/cameras/camera1/start-recording \
   -H "Content-Type: application/json" \
   -d '{
     "filename": "high_quality.avi",
@@ -505,28 +505,28 @@ curl -X POST http://localhost:8000/cameras/camera1/start-recording \
   }'
 
 # Stop recording
-curl -X POST http://localhost:8000/cameras/camera1/stop-recording
+curl -X POST http://vision:8000/cameras/camera1/stop-recording
 ```
 
 ### Auto-Recording Management
 ```bash
 # Enable auto-recording for camera1
-curl -X POST http://localhost:8000/cameras/camera1/auto-recording/enable
+curl -X POST http://vision:8000/cameras/camera1/auto-recording/enable
 
 # Check auto-recording status
-curl http://localhost:8000/auto-recording/status
+curl http://vision:8000/auto-recording/status
 
 # Disable auto-recording for camera1
-curl -X POST http://localhost:8000/cameras/camera1/auto-recording/disable
+curl -X POST http://vision:8000/cameras/camera1/auto-recording/disable
 ```
 
 ### Camera Configuration
 ```bash
 # Get current camera configuration
-curl http://localhost:8000/cameras/camera1/config
+curl http://vision:8000/cameras/camera1/config
 
 # Update camera settings (real-time)
-curl -X PUT http://localhost:8000/cameras/camera1/config \
+curl -X PUT http://vision:8000/cameras/camera1/config \
   -H "Content-Type: application/json" \
   -d '{
     "exposure_ms": 1.5,
@@ -606,7 +606,7 @@ curl -X PUT http://localhost:8000/cameras/camera1/config \
 ## 📞 Support & Integration
 
 ### API Base URL
-- **Development**: `http://localhost:8000`
+- **Development**: `http://vision:8000`
 - **Production**: Configure in `config.json` under `system.api_host` and `system.api_port`
 
 ### Error Handling

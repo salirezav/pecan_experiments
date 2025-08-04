@@ -38,7 +38,7 @@ When you run the system, you'll see:
 
 ### MQTT Status
 ```http
-GET http://localhost:8000/mqtt/status
+GET http://vision:8000/mqtt/status
 ```
 
 **Response:**
@@ -60,7 +60,7 @@ GET http://localhost:8000/mqtt/status
 
 ### Machine Status
 ```http
-GET http://localhost:8000/machines
+GET http://vision:8000/machines
 ```
 
 **Response:**
@@ -85,7 +85,7 @@ GET http://localhost:8000/machines
 
 ### System Status
 ```http
-GET http://localhost:8000/system/status
+GET http://vision:8000/system/status
 ```
 
 **Response:**
@@ -125,13 +125,13 @@ Tests all the API endpoints and shows expected responses.
 ### 4. **Query APIs Directly**
 ```bash
 # Check MQTT status
-curl http://localhost:8000/mqtt/status
+curl http://vision:8000/mqtt/status
 
 # Check machine states
-curl http://localhost:8000/machines
+curl http://vision:8000/machines
 
 # Check overall system status
-curl http://localhost:8000/system/status
+curl http://vision:8000/system/status
 ```
 
 ## 🔧 Configuration

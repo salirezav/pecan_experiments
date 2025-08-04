@@ -7,7 +7,7 @@ This guide is specifically designed for AI assistants to understand and implemen
 The USDA Vision Camera system provides live video streaming through REST API endpoints. The streaming uses MJPEG format which is natively supported by HTML `<img>` tags and can be easily integrated into React components.
 
 ### Key Characteristics:
-- **Base URL**: `http://vision:8000` (production) or `http://localhost:8000` (development)
+- **Base URL**: `http://vision:8000` (production) or `http://vision:8000` (development)
 - **Stream Format**: MJPEG (Motion JPEG)
 - **Content-Type**: `multipart/x-mixed-replace; boundary=frame`
 - **Authentication**: None (add if needed for production)
@@ -15,7 +15,7 @@ The USDA Vision Camera system provides live video streaming through REST API end
 
 ### Base URL Configuration:
 - **Production**: `http://vision:8000` (requires hostname setup)
-- **Development**: `http://localhost:8000` (local testing)
+- **Development**: `http://vision:8000` (local testing)
 - **Custom IP**: `http://192.168.1.100:8000` (replace with actual IP)
 - **Custom hostname**: Configure DNS or /etc/hosts as needed
 
@@ -456,7 +456,7 @@ REACT_APP_STREAM_REFRESH_INTERVAL=30000
 REACT_APP_STREAM_TIMEOUT=10000
 
 # Development configuration (using localhost)
-# REACT_APP_CAMERA_API_URL=http://localhost:8000
+# REACT_APP_CAMERA_API_URL=http://vision:8000
 
 # Custom IP configuration
 # REACT_APP_CAMERA_API_URL=http://192.168.1.100:8000

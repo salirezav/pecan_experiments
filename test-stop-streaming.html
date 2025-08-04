@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -64,7 +65,8 @@
             background-color: #c82333;
         }
 
-        input, select {
+        input,
+        select {
             padding: 8px;
             margin: 5px;
             border: 1px solid #ddd;
@@ -72,13 +74,14 @@
         }
     </style>
 </head>
+
 <body>
     <h1>🛑 Stop Streaming API Test</h1>
-    
+
     <div class="test-section">
         <h3>Test Stop Streaming Endpoint</h3>
         <p>This test verifies that the stop streaming API endpoint works correctly.</p>
-        
+
         <div>
             <label for="cameraSelect">Select Camera:</label>
             <select id="cameraSelect">
@@ -86,28 +89,28 @@
             </select>
             <button onclick="testStopStreaming()" class="stop-btn">Stop Streaming</button>
         </div>
-        
+
         <div id="test-results" class="test-section" style="display: none;"></div>
     </div>
 
     <div class="test-section">
         <h3>Manual API Test</h3>
         <p>Test the API endpoint directly:</p>
-        
+
         <div>
             <input type="text" id="manualCamera" placeholder="Enter camera name (e.g., camera1)" value="camera1">
             <button onclick="testManualStopStreaming()">Manual Stop Stream</button>
         </div>
-        
+
         <div id="manual-results" class="test-section" style="display: none;"></div>
     </div>
 
     <script>
-        const API_BASE = 'http://localhost:8000';
+        const API_BASE = 'http://vision:8000';
         let cameras = {};
 
         // Load cameras on page load
-        window.onload = async function() {
+        window.onload = async function () {
             await loadCameras();
         };
 
@@ -117,18 +120,18 @@
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                 }
-                
+
                 cameras = await response.json();
                 const select = document.getElementById('cameraSelect');
                 select.innerHTML = '<option value="">Select a camera...</option>';
-                
+
                 Object.keys(cameras).forEach(cameraName => {
                     const option = document.createElement('option');
                     option.value = cameraName;
                     option.textContent = `${cameraName} (${cameras[cameraName].status})`;
                     select.appendChild(option);
                 });
-                
+
             } catch (error) {
                 console.error('Error loading cameras:', error);
                 const select = document.getElementById('cameraSelect');
@@ -241,4 +244,5 @@
         }
     </script>
 </body>
+
 </html>

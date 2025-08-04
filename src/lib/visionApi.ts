@@ -1,6 +1,6 @@
 // Vision System API Client
 // Base URL for the vision system API
-const VISION_API_BASE_URL = 'http://localhost:8000'
+const VISION_API_BASE_URL = 'http://vision:8000'
 
 // Types based on the API documentation
 export interface SystemStatus {

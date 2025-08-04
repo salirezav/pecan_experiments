@@ -192,13 +192,13 @@ Comprehensive error tracking with:
 
 ```bash
 # Check system status
-curl http://localhost:8000/system/status
+curl http://vision:8000/system/status
 
 # Check camera status
-curl http://localhost:8000/cameras
+curl http://vision:8000/cameras
 
 # Manual recording start
-curl -X POST http://localhost:8000/cameras/camera1/start-recording \
+curl -X POST http://vision:8000/cameras/camera1/start-recording \
   -H "Content-Type: application/json" \
   -d '{"camera_name": "camera1"}'
 ```
@@ -246,4 +246,4 @@ This project is developed for USDA research purposes.
 For issues and questions:
 1. Check the logs in `usda_vision_system.log`
 2. Review the troubleshooting section
-3. Check API status at `http://localhost:8000/health`
+3. Check API status at `http://vision:8000/health`

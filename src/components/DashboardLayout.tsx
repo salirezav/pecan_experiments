@@ -6,6 +6,7 @@ import { UserManagement } from './UserManagement'
 import { Experiments } from './Experiments'
 import { DataEntry } from './DataEntry'
 import { VisionSystem } from './VisionSystem'
+import { VideoStreamingPage } from '../features/video-streaming'
 import { userManagement, type User } from '../lib/supabase'
 
 interface DashboardLayoutProps {
@@ -84,6 +85,8 @@ export function DashboardLayout({ onLogout }: DashboardLayoutProps) {
         return <DataEntry />
       case 'vision-system':
         return <VisionSystem />
+      case 'video-library':
+        return <VideoStreamingPage />
       default:
         return <DashboardHome user={user} />
     }

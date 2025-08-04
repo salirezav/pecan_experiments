@@ -275,7 +275,7 @@ The system provides a comprehensive REST API for monitoring and control.
 The API server starts automatically with the main system on port 8000:
 ```bash
 python main.py
-# API available at: http://localhost:8000
+# API available at: http://vision:8000
 ```
 
 ### 🚀 New API Features
@@ -300,7 +300,7 @@ python main.py
 #### System Status
 ```bash
 # Get overall system status
-curl http://localhost:8000/system/status
+curl http://vision:8000/system/status
 
 # Response example:
 {
@@ -320,7 +320,7 @@ curl http://localhost:8000/system/status
 #### Machine Status
 ```bash
 # Get all machine states
-curl http://localhost:8000/machines
+curl http://vision:8000/machines
 
 # Response example:
 {
@@ -336,10 +336,10 @@ curl http://localhost:8000/machines
 #### Camera Status
 ```bash
 # Get all camera statuses
-curl http://localhost:8000/cameras
+curl http://vision:8000/cameras
 
 # Get specific camera status
-curl http://localhost:8000/cameras/camera1
+curl http://vision:8000/cameras/camera1
 
 # Response example:
 {
@@ -357,12 +357,12 @@ curl http://localhost:8000/cameras/camera1
 #### Manual Recording Control
 ```bash
 # Start recording manually
-curl -X POST http://localhost:8000/cameras/camera1/start-recording \
+curl -X POST http://vision:8000/cameras/camera1/start-recording \
   -H "Content-Type: application/json" \
   -d '{"camera_name": "camera1", "filename": "manual_test.avi"}'
 
 # Stop recording manually
-curl -X POST http://localhost:8000/cameras/camera1/stop-recording
+curl -X POST http://vision:8000/cameras/camera1/stop-recording
 
 # Response example:
 {
@@ -375,15 +375,15 @@ curl -X POST http://localhost:8000/cameras/camera1/stop-recording
 #### Storage Management
 ```bash
 # Get storage statistics
-curl http://localhost:8000/storage/stats
+curl http://vision:8000/storage/stats
 
 # Get recording files list
-curl -X POST http://localhost:8000/storage/files \
+curl -X POST http://vision:8000/storage/files \
   -H "Content-Type: application/json" \
   -d '{"camera_name": "camera1", "limit": 10}'
 
 # Cleanup old files
-curl -X POST http://localhost:8000/storage/cleanup \
+curl -X POST http://vision:8000/storage/cleanup \
   -H "Content-Type: application/json" \
   -d '{"max_age_days": 30}'
 ```
@@ -391,7 +391,7 @@ curl -X POST http://localhost:8000/storage/cleanup \
 ### WebSocket Real-time Updates
 ```javascript
 // Connect to WebSocket for real-time updates
-const ws = new WebSocket('ws://localhost:8000/ws');
+const ws = new WebSocket('ws://vision:8000/ws');
 
 ws.onmessage = function(event) {
     const update = JSON.parse(event.data);
@@ -414,14 +414,14 @@ import requests
 import json
 
 # System status check
-response = requests.get('http://localhost:8000/system/status')
+response = requests.get('http://vision:8000/system/status')
 status = response.json()
 print(f"System running: {status['system_started']}")
 
 # Start recording
 recording_data = {"camera_name": "camera1"}
 response = requests.post(
-    'http://localhost:8000/cameras/camera1/start-recording',
+    'http://vision:8000/cameras/camera1/start-recording',
     headers={'Content-Type': 'application/json'},
     data=json.dumps(recording_data)
 )
@@ -440,7 +440,7 @@ function useSystemStatus() {
   useEffect(() => {
     const fetchStatus = async () => {
       try {
-        const response = await fetch('http://localhost:8000/system/status');
+        const response = await fetch('http://vision:8000/system/status');
         const data = await response.json();
         setStatus(data);
       } catch (error) {
@@ -487,7 +487,7 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 async function syncRecordingData() {
   try {
     // Get recordings from vision system
-    const response = await fetch('http://localhost:8000/storage/files', {
+    const response = await fetch('http://vision:8000/storage/files', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ limit: 100 })
@@ -563,10 +563,10 @@ The system tracks:
 ### Health Checks
 ```bash
 # API health check
-curl http://localhost:8000/health
+curl http://vision:8000/health
 
 # System status
-curl http://localhost:8000/system/status
+curl http://vision:8000/system/status
 
 # Time synchronization
 python check_time.py
@@ -757,8 +757,8 @@ python test_timezone.py
 python check_time.py
 
 # API health check
-curl http://localhost:8000/health
-curl http://localhost:8000/system/status
+curl http://vision:8000/health
+curl http://vision:8000/system/status
 ```
 
 ### Log Analysis
@@ -860,11 +860,11 @@ For technical support:
 1. Check the troubleshooting section above
 2. Review logs in `usda_vision_system.log`
 3. Run system diagnostics with `python test_system.py`
-4. Check API health at `http://localhost:8000/health`
+4. Check API health at `http://vision:8000/health`
 
 ---
 
 **System Status**: ✅ **READY FOR PRODUCTION**
 **Time Sync**: ✅ **ATLANTA, GEORGIA (EDT/EST)**
-**API Server**: ✅ **http://localhost:8000**
+**API Server**: ✅ **http://vision:8000**
 **Documentation**: ✅ **COMPLETE**

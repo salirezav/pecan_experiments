@@ -44,7 +44,7 @@ Enhanced the `POST /cameras/{camera_name}/start-recording` API endpoint to accep
 
 ### Basic Recording (unchanged)
 ```http
-POST http://localhost:8000/cameras/camera1/start-recording
+POST http://vision:8000/cameras/camera1/start-recording
 Content-Type: application/json
 
 {
@@ -56,7 +56,7 @@ Content-Type: application/json
 
 ### Recording with Camera Settings
 ```http
-POST http://localhost:8000/cameras/camera1/start-recording
+POST http://vision:8000/cameras/camera1/start-recording
 Content-Type: application/json
 
 {
@@ -73,7 +73,7 @@ Content-Type: application/json
 
 ### Maximum FPS Recording
 ```http
-POST http://localhost:8000/cameras/camera1/start-recording
+POST http://vision:8000/cameras/camera1/start-recording
 Content-Type: application/json
 
 {
@@ -91,7 +91,7 @@ Content-Type: application/json
 
 ### Settings Only (no filename)
 ```http
-POST http://localhost:8000/cameras/camera1/start-recording
+POST http://vision:8000/cameras/camera1/start-recording
 Content-Type: application/json
 
 {

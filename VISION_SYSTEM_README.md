@@ -40,7 +40,7 @@ The Vision System dashboard provides real-time monitoring and control of the USD
 
 ## API Integration
 
-The dashboard connects to the Vision System API running on `http://localhost:8000` and provides:
+The dashboard connects to the Vision System API running on `http://vision:8000` and provides:
 
 ### Endpoints Used
 - `GET /system/status` - System overview and status
@@ -103,7 +103,7 @@ The dashboard includes comprehensive error handling:
 ### Common Issues
 
 1. **"Failed to fetch vision system data"**
-   - Ensure the vision system API is running on localhost:8000
+   - Ensure the vision system API is running on vision:8000
    - Check network connectivity
    - Verify the vision system service is started
 
@@ -121,7 +121,7 @@ The dashboard includes comprehensive error handling:
 
 The API base URL is configured in `src/lib/visionApi.ts`:
 ```typescript
-const VISION_API_BASE_URL = 'http://localhost:8000'
+const VISION_API_BASE_URL = 'http://vision:8000'
 ```
 
 To change the API endpoint, modify this constant and rebuild the application.

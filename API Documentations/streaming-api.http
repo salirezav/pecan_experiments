@@ -2,7 +2,7 @@
 ###
 ### CONFIGURATION:
 ### - Production: http://vision:8000 (requires hostname setup)
-### - Development: http://localhost:8000
+### - Development: http://vision:8000
 ### - Custom: Update @baseUrl below to match your setup
 ###
 ### This file contains streaming-specific API endpoints for live camera preview
@@ -10,7 +10,7 @@
 
 # Base URL - Update to match your configuration
 @baseUrl = http://vision:8000
-# Alternative: @baseUrl = http://localhost:8000
+# Alternative: @baseUrl = http://vision:8000
 
 ### =============================================================================
 ### STREAMING ENDPOINTS (NEW FUNCTIONALITY)
@@ -47,7 +47,7 @@ Content-Type: application/json
 GET {{baseUrl}}/cameras/camera1/stream
 
 ### Usage in HTML:
-# <img src="http://localhost:8000/cameras/camera1/stream" alt="Live Stream" />
+# <img src="http://vision:8000/cameras/camera1/stream" alt="Live Stream" />
 
 ### Usage in React:
 # <img src={`${apiBaseUrl}/cameras/${cameraName}/stream?t=${Date.now()}`} />

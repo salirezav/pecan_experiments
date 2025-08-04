@@ -16,7 +16,7 @@ export interface ApiConfig {
 }
 
 export const defaultApiConfig: ApiConfig = {
-  baseUrl: 'http://vision:8000',  // Production default, change to 'http://localhost:8000' for development
+  baseUrl: 'http://vision:8000',  // Production default, change to 'http://vision:8000' for development
   timeout: 10000,
   refreshInterval: 30000,
 };

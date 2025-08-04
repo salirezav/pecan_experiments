@@ -17,7 +17,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 def test_api_endpoints():
     """Test the streaming API endpoints"""
-    base_url = "http://localhost:8000"
+    base_url = "http://vision:8000"
     
     print("🧪 Testing Camera Streaming API Endpoints")
     print("=" * 50)
@@ -109,7 +109,7 @@ def test_camera_streaming(base_url, camera_name):
 
 def test_concurrent_recording_and_streaming():
     """Test that streaming doesn't interfere with recording"""
-    base_url = "http://localhost:8000"
+    base_url = "http://vision:8000"
     
     print("\n🔄 Testing Concurrent Recording and Streaming")
     print("=" * 50)

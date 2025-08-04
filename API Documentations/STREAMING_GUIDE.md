@@ -40,13 +40,13 @@ Open `camera_preview.html` in your browser and click "Start Stream" for any came
 ### 3. API Usage
 ```bash
 # Start streaming for camera1
-curl -X POST http://localhost:8000/cameras/camera1/start-stream
+curl -X POST http://vision:8000/cameras/camera1/start-stream
 
 # View live stream (open in browser)
-http://localhost:8000/cameras/camera1/stream
+http://vision:8000/cameras/camera1/stream
 
 # Stop streaming
-curl -X POST http://localhost:8000/cameras/camera1/stop-stream
+curl -X POST http://vision:8000/cameras/camera1/stop-stream
 ```
 
 ## 📡 API Endpoints
@@ -150,10 +150,10 @@ The system supports these concurrent operations:
 ### Example: Concurrent Usage
 ```bash
 # Start streaming
-curl -X POST http://localhost:8000/cameras/camera1/start-stream
+curl -X POST http://vision:8000/cameras/camera1/start-stream
 
 # Start recording (while streaming continues)
-curl -X POST http://localhost:8000/cameras/camera1/start-recording \
+curl -X POST http://vision:8000/cameras/camera1/start-recording \
   -H "Content-Type: application/json" \
   -d '{"filename": "test_recording.avi"}'
 
@@ -232,8 +232,8 @@ For issues with streaming functionality:
 
 1. Check the system logs: `usda_vision_system.log`
 2. Run the test script: `python test_streaming.py`
-3. Verify API health: `http://localhost:8000/health`
-4. Check camera status: `http://localhost:8000/cameras`
+3. Verify API health: `http://vision:8000/health`
+4. Check camera status: `http://vision:8000/cameras`
 
 ---
 
