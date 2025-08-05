@@ -204,10 +204,10 @@ sudo systemctl restart usda-vision-camera
 ### Check Status
 ```bash
 # Check video module status
-curl http://localhost:8000/system/video-module
+curl http://vision:8000/system/video-module
 
 # Check available videos
-curl http://localhost:8000/videos/
+curl http://vision:8000/videos/
 ```
 
 ### Logs

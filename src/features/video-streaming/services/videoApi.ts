@@ -90,9 +90,18 @@ export class VideoApiService {
    */
   async getVideos(params: VideoListParams = {}): Promise<VideoListResponse> {
     try {
-      const queryString = buildQueryString(params);
+      // Convert page-based params to offset-based for API compatibility
+      const apiParams = { ...params };
+
+      // If page is provided, convert to offset
+      if (params.page && params.limit) {
+        apiParams.offset = (params.page - 1) * params.limit;
+        delete apiParams.page; // Remove page param as API expects offset
+      }
+
+      const queryString = buildQueryString(apiParams);
       const url = `${this.baseUrl}/videos/${queryString ? `?${queryString}` : ''}`;
-      
+
       const response = await fetch(url, {
         method: 'GET',
         headers: {
@@ -100,7 +109,21 @@ export class VideoApiService {
         },
       });
 
-      return await handleApiResponse<VideoListResponse>(response);
+      const result = await handleApiResponse<VideoListResponse>(response);
+
+      // Add pagination metadata if page was requested
+      if (params.page && params.limit) {
+        const totalPages = Math.ceil(result.total_count / params.limit);
+        return {
+          ...result,
+          page: params.page,
+          total_pages: totalPages,
+          has_next: params.page < totalPages,
+          has_previous: params.page > 1,
+        };
+      }
+
+      return result;
     } catch (error) {
       if (error instanceof VideoApiError) {
         throw error;

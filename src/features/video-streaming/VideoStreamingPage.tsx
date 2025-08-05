@@ -50,122 +50,116 @@ export const VideoStreamingPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="py-6">
-            <h1 className="text-3xl font-bold text-gray-900">Video Library</h1>
-            <p className="mt-2 text-gray-600">
-              Browse and view recorded videos from your camera system
-            </p>
-          </div>
-        </div>
+      <div>
+        <h1 className="text-3xl font-bold text-gray-900">Video Library</h1>
+        <p className="mt-2 text-gray-600">
+          Browse and view recorded videos from your camera system
+        </p>
       </div>
 
       {/* Filters and Controls */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div className="bg-white rounded-lg shadow p-6 mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {/* Camera Filter */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Filter by Camera
-              </label>
+      <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-theme-sm">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Camera Filter */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Filter by Camera
+            </label>
+            <select
+              value={filters.cameraName || 'all'}
+              onChange={(e) => handleCameraFilterChange(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+            >
+              <option value="all">All Cameras</option>
+              {availableCameras.map(camera => (
+                <option key={camera} value={camera}>
+                  {camera}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Sort Options */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Sort by
+            </label>
+            <div className="flex space-x-2">
               <select
-                value={filters.cameraName || 'all'}
-                onChange={(e) => handleCameraFilterChange(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                value={sortOptions.field}
+                onChange={(e) => handleSortChange(e.target.value as VideoListSortOptions['field'], sortOptions.direction)}
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
               >
-                <option value="all">All Cameras</option>
-                {availableCameras.map(camera => (
-                  <option key={camera} value={camera}>
-                    {camera}
-                  </option>
-                ))}
+                <option value="created_at">Date Created</option>
+                <option value="file_size_bytes">File Size</option>
+                <option value="camera_name">Camera Name</option>
+                <option value="filename">Filename</option>
               </select>
-            </div>
-
-            {/* Sort Options */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Sort by
-              </label>
-              <div className="flex space-x-2">
-                <select
-                  value={sortOptions.field}
-                  onChange={(e) => handleSortChange(e.target.value as VideoListSortOptions['field'], sortOptions.direction)}
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                >
-                  <option value="created_at">Date Created</option>
-                  <option value="file_size_bytes">File Size</option>
-                  <option value="camera_name">Camera Name</option>
-                  <option value="filename">Filename</option>
-                </select>
-                <button
-                  onClick={() => handleSortChange(sortOptions.field, sortOptions.direction === 'asc' ? 'desc' : 'asc')}
-                  className="px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  title={`Sort ${sortOptions.direction === 'asc' ? 'Descending' : 'Ascending'}`}
-                >
-                  {sortOptions.direction === 'asc' ? (
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" />
-                    </svg>
-                  ) : (
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h13M3 8h9m-9 4h9m5-4v12m0 0l-4-4m4 4l4-4" />
-                    </svg>
-                  )}
-                </button>
-              </div>
-            </div>
-
-            {/* Date Range Filter */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Date Range
-              </label>
-              <div className="flex space-x-2">
-                <input
-                  type="date"
-                  value={filters.dateRange?.start || ''}
-                  onChange={(e) => handleDateRangeChange(e.target.value, filters.dateRange?.end || '')}
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
-                <input
-                  type="date"
-                  value={filters.dateRange?.end || ''}
-                  onChange={(e) => handleDateRangeChange(filters.dateRange?.start || '', e.target.value)}
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
-              </div>
+              <button
+                onClick={() => handleSortChange(sortOptions.field, sortOptions.direction === 'asc' ? 'desc' : 'asc')}
+                className="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+                title={`Sort ${sortOptions.direction === 'asc' ? 'Descending' : 'Ascending'}`}
+              >
+                {sortOptions.direction === 'asc' ? (
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" />
+                  </svg>
+                ) : (
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h13M3 8h9m-9 4h9m5-4v12m0 0l-4-4m4 4l4-4" />
+                  </svg>
+                )}
+              </button>
             </div>
           </div>
 
-          {/* Clear Filters */}
-          {(filters.cameraName || filters.dateRange) && (
-            <div className="mt-4 pt-4 border-t">
-              <button
-                onClick={() => setFilters({})}
-                className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-sm font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-              >
-                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-                Clear Filters
-              </button>
+          {/* Date Range Filter */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Date Range
+            </label>
+            <div className="flex space-x-2">
+              <input
+                type="date"
+                value={filters.dateRange?.start || ''}
+                onChange={(e) => handleDateRangeChange(e.target.value, filters.dateRange?.end || '')}
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+              <input
+                type="date"
+                value={filters.dateRange?.end || ''}
+                onChange={(e) => handleDateRangeChange(filters.dateRange?.start || '', e.target.value)}
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
             </div>
-          )}
+          </div>
         </div>
 
-        {/* Video List */}
-        <VideoList
-          filters={filters}
-          sortOptions={sortOptions}
-          onVideoSelect={handleVideoSelect}
-          limit={24}
-        />
+        {/* Clear Filters */}
+        {(filters.cameraName || filters.dateRange) && (
+          <div className="mt-4 pt-4 border-t border-gray-100">
+            <button
+              onClick={() => setFilters({})}
+              className="inline-flex items-center px-3 py-2 text-sm font-medium transition rounded-lg border bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+            >
+              <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+              Clear Filters
+            </button>
+          </div>
+        )}
       </div>
+
+      {/* Video List */}
+      <VideoList
+        filters={filters}
+        sortOptions={sortOptions}
+        onVideoSelect={handleVideoSelect}
+        limit={24}
+      />
 
       {/* Video Modal */}
       <VideoModal

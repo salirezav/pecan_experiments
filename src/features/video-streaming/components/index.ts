@@ -10,6 +10,7 @@ export { VideoThumbnail } from './VideoThumbnail';
 export { VideoCard } from './VideoCard';
 export { VideoList } from './VideoList';
 export { VideoModal } from './VideoModal';
+export { Pagination, PageInfo } from './Pagination';
 
 // Re-export component prop types for convenience
 export type {
@@ -17,4 +18,5 @@ export type {
   VideoThumbnailProps,
   VideoCardProps,
   VideoListProps,
+  PaginationProps,
 } from '../types';

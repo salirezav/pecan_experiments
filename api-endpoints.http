@@ -171,7 +171,7 @@ POST http://vision:8000/cameras/camera1/start-recording
 Content-Type: application/json
 
 {
-  "filename": "test_recording.avi",
+  "filename": "test_recording.mp4",
   "exposure_ms": 1.5,
   "gain": 3.0,
   "fps": 0
@@ -187,7 +187,7 @@ Content-Type: application/json
 # {
 #   "success": true,
 #   "message": "Recording started for camera1",
-#   "filename": "20250728_120000_test_recording.avi"
+#   "filename": "20250728_120000_test_recording.mp4"
 # }
 
 ###
@@ -197,7 +197,7 @@ POST http://vision:8000/cameras/camera1/start-recording
 Content-Type: application/json
 
 {
-  "filename": "simple_test.avi"
+  "filename": "simple_test.mp4"
 }
 
 ###

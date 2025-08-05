@@ -52,7 +52,7 @@ export function AutoRecordingTest() {
       if (state === 'on') {
         // Simulate starting recording on the correct camera
         const result = await visionApi.startRecording(cameraName, {
-          filename: `test_auto_${machine}_${Date.now()}.avi`
+          filename: `test_auto_${machine}_${Date.now()}.mp4`
         })
         event.result = result.success ? `✅ Recording started on ${cameraName}: ${result.filename}` : `❌ Failed: ${result.message}`
       } else {

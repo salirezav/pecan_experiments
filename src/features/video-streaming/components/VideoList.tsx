@@ -8,6 +8,7 @@ import React, { useState, useEffect } from 'react';
 import { type VideoListProps, type VideoListFilters, type VideoListSortOptions } from '../types';
 import { useVideoList } from '../hooks/useVideoList';
 import { VideoCard } from './VideoCard';
+import { Pagination, PageInfo } from './Pagination';
 
 export const VideoList: React.FC<VideoListProps> = ({
   filters,
@@ -24,11 +25,16 @@ export const VideoList: React.FC<VideoListProps> = ({
   const {
     videos,
     totalCount,
+    currentPage,
+    totalPages,
     loading,
     error,
     refetch,
     loadMore,
     hasMore,
+    goToPage,
+    nextPage,
+    previousPage,
     updateFilters,
     updateSort,
   } = useVideoList({
@@ -38,6 +44,7 @@ export const VideoList: React.FC<VideoListProps> = ({
       end_date: localFilters.dateRange?.end,
       limit,
       include_metadata: true,
+      page: 1, // Start with page 1
     },
     autoFetch: true,
   });
@@ -130,17 +137,22 @@ export const VideoList: React.FC<VideoListProps> = ({
       {/* Results Summary */}
       <div className="flex items-center justify-between mb-6">
         <div className="text-sm text-gray-600">
-          Showing {videos.length} of {totalCount} videos
+          {totalPages > 0 ? (
+            <>Showing page {currentPage} of {totalPages} ({totalCount} total videos)</>
+          ) : (
+            <>Showing {videos.length} of {totalCount} videos</>
+          )}
         </div>
 
         <button
           onClick={refetch}
-          className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-sm font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          disabled={loading === 'loading'}
+          className="inline-flex items-center px-3 py-2 text-sm font-medium transition rounded-lg border bg-white text-gray-700 border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
           </svg>
-          Refresh
+          {loading === 'loading' ? 'Refreshing...' : 'Refresh'}
         </button>
       </div>
 
@@ -156,37 +168,37 @@ export const VideoList: React.FC<VideoListProps> = ({
         ))}
       </div>
 
-      {/* Load More Button */}
-      {hasMore && (
-        <div className="flex justify-center mt-8">
-          <button
-            onClick={handleLoadMore}
-            disabled={loading === 'loading'}
-            className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {loading === 'loading' ? (
-              <>
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                Loading...
-              </>
-            ) : (
-              <>
-                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                </svg>
-                Load More Videos
-              </>
-            )}
-          </button>
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="mt-8 space-y-4">
+          {/* Page Info */}
+          <PageInfo
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={totalCount}
+            itemsPerPage={limit}
+            className="text-center"
+          />
+
+          {/* Pagination Controls */}
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={goToPage}
+            showFirstLast={true}
+            showPrevNext={true}
+            maxVisiblePages={5}
+            className="justify-center"
+          />
         </div>
       )}
 
-      {/* Loading Indicator for Additional Videos */}
-      {loading === 'loading' && videos.length > 0 && (
-        <div className="flex justify-center mt-4">
+      {/* Loading Indicator */}
+      {loading === 'loading' && (
+        <div className="flex justify-center mt-8">
           <div className="text-sm text-gray-600 flex items-center">
-            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500 mr-2"></div>
-            Loading more videos...
+            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-brand-500 mr-2"></div>
+            Loading videos...
           </div>
         </div>
       )}

@@ -136,12 +136,12 @@ export function getRecommendedVideoSettings(useCase: 'production' | 'storage-opt
   const settings = {
     production: {
       video_format: 'mp4',
-      video_codec: 'mp4v',
+      video_codec: 'h264',
       video_quality: 95,
     },
     'storage-optimized': {
       video_format: 'mp4',
-      video_codec: 'mp4v',
+      video_codec: 'h264',
       video_quality: 85,
     },
     legacy: {

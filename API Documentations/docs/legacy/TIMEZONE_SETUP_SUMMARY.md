@@ -76,7 +76,7 @@ timedatectl status
 ### API Endpoints
 ```bash
 # System status includes time info
-curl http://localhost:8000/system/status
+curl http://vision:8000/system/status
 
 # Example response includes:
 {

@@ -18,6 +18,9 @@ export function DashboardLayout({ onLogout }: DashboardLayoutProps) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [currentView, setCurrentView] = useState('dashboard')
+  const [isExpanded, setIsExpanded] = useState(true)
+  const [isMobileOpen, setIsMobileOpen] = useState(false)
+  const [isHovered, setIsHovered] = useState(false)
 
   useEffect(() => {
     fetchUserProfile()
@@ -46,6 +49,22 @@ export function DashboardLayout({ onLogout }: DashboardLayoutProps) {
     // Navigate to signout route which will handle the actual logout
     window.history.pushState({}, '', '/signout')
     window.dispatchEvent(new PopStateEvent('popstate'))
+  }
+
+  const toggleSidebar = () => {
+    setIsExpanded(!isExpanded)
+  }
+
+  const toggleMobileSidebar = () => {
+    setIsMobileOpen(!isMobileOpen)
+  }
+
+  const handleToggleSidebar = () => {
+    if (window.innerWidth >= 1024) {
+      toggleSidebar()
+    } else {
+      toggleMobileSidebar()
+    }
   }
 
   const renderCurrentView = () => {
@@ -96,8 +115,8 @@ export function DashboardLayout({ onLogout }: DashboardLayoutProps) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading dashboard...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-500 mx-auto"></div>
+          <p className="mt-4 text-gray-600 dark:text-gray-400">Loading dashboard...</p>
         </div>
       </div>
     )
@@ -107,12 +126,12 @@ export function DashboardLayout({ onLogout }: DashboardLayoutProps) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="max-w-md w-full">
-          <div className="rounded-md bg-red-50 p-4">
-            <div className="text-sm text-red-700">{error}</div>
+          <div className="rounded-2xl bg-error-50 border border-error-200 p-4 dark:bg-error-500/15 dark:border-error-500/20">
+            <div className="text-sm text-error-700 dark:text-error-500">{error}</div>
           </div>
           <button
             onClick={handleLogout}
-            className="mt-4 w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-gray-600 hover:bg-gray-700"
+            className="mt-4 w-full flex justify-center py-2.5 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-gray-600 hover:bg-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 transition-colors"
           >
             Back to Login
           </button>
@@ -125,10 +144,10 @@ export function DashboardLayout({ onLogout }: DashboardLayoutProps) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
-          <div className="text-gray-600">No user data available</div>
+          <div className="text-gray-600 dark:text-gray-400">No user data available</div>
           <button
             onClick={handleLogout}
-            className="mt-4 px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700"
+            className="mt-4 px-4 py-2.5 bg-gray-600 text-white rounded-lg hover:bg-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 transition-colors"
           >
             Back to Login
           </button>
@@ -138,17 +157,39 @@ export function DashboardLayout({ onLogout }: DashboardLayoutProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 flex">
-      <Sidebar
-        user={user}
-        currentView={currentView}
-        onViewChange={setCurrentView}
-      />
-      <div className="flex-1 flex flex-col">
-        <TopNavbar user={user} onLogout={handleLogout} currentView={currentView} />
-        <main className="flex-1 overflow-auto">
+    <div className="min-h-screen xl:flex">
+      <div>
+        <Sidebar
+          user={user}
+          currentView={currentView}
+          onViewChange={setCurrentView}
+          isExpanded={isExpanded}
+          isMobileOpen={isMobileOpen}
+          isHovered={isHovered}
+          setIsHovered={setIsHovered}
+        />
+        {/* Backdrop for mobile */}
+        {isMobileOpen && (
+          <div
+            className="fixed inset-0 z-40 bg-gray-900/50 lg:hidden"
+            onClick={() => setIsMobileOpen(false)}
+          />
+        )}
+      </div>
+      <div
+        className={`flex-1 transition-all duration-300 ease-in-out ${isExpanded || isHovered ? "lg:ml-[290px]" : "lg:ml-[90px]"
+          } ${isMobileOpen ? "ml-0" : ""}`}
+      >
+        <TopNavbar
+          user={user}
+          onLogout={handleLogout}
+          currentView={currentView}
+          onToggleSidebar={handleToggleSidebar}
+          isSidebarOpen={isMobileOpen}
+        />
+        <div className="p-4 mx-auto max-w-(--breakpoint-2xl) md:p-6">
           {renderCurrentView()}
-        </main>
+        </div>
       </div>
     </div>
   )

@@ -618,7 +618,7 @@ export function VisionSystem() {
   const handleStartRecording = async (cameraName: string) => {
     try {
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
-      const filename = `manual_${cameraName}_${timestamp}.avi`
+      const filename = `manual_${cameraName}_${timestamp}.mp4`
 
       const result = await visionApi.startRecording(cameraName, { filename })
 

@@ -35,6 +35,10 @@ export interface VideoWithMetadata extends VideoFile {
 export interface VideoListResponse {
   videos: VideoFile[];
   total_count: number;
+  page?: number;
+  total_pages?: number;
+  has_next?: boolean;
+  has_previous?: boolean;
 }
 
 // API response for video info
@@ -66,6 +70,8 @@ export interface VideoListParams {
   end_date?: string;
   limit?: number;
   include_metadata?: boolean;
+  page?: number;
+  offset?: number;
 }
 
 // Thumbnail request parameters
@@ -119,6 +125,17 @@ export interface VideoListProps {
   sortOptions?: VideoListSortOptions;
   limit?: number;
   onVideoSelect?: (video: VideoFile) => void;
+  className?: string;
+}
+
+// Pagination component props
+export interface PaginationProps {
+  currentPage: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
+  showFirstLast?: boolean;
+  showPrevNext?: boolean;
+  maxVisiblePages?: number;
   className?: string;
 }
 

@@ -18,10 +18,13 @@ This document provides comprehensive documentation for all API endpoints in the 
 ## 🔧 System Status & Health
 
 ### Get System Status
+
 ```http
 GET /system/status
 ```
+
 **Response**: `SystemStatusResponse`
+
 ```json
 {
   "system_started": true,
@@ -49,10 +52,13 @@ GET /system/status
 ```
 
 ### Health Check
+
 ```http
 GET /health
 ```
+
 **Response**: Simple health status
+
 ```json
 {
   "status": "healthy",
@@ -63,16 +69,21 @@ GET /health
 ## 📷 Camera Management
 
 ### Get All Cameras
+
 ```http
 GET /cameras
 ```
+
 **Response**: `Dict[str, CameraStatusResponse]`
 
 ### Get Specific Camera Status
+
 ```http
 GET /cameras/{camera_name}/status
 ```
+
 **Response**: `CameraStatusResponse`
+
 ```json
 {
   "name": "camera1",
@@ -97,12 +108,13 @@ GET /cameras/{camera_name}/status
 ## 🎥 Recording Control
 
 ### Start Recording
+
 ```http
 POST /cameras/{camera_name}/start-recording
 Content-Type: application/json
 
 {
-  "filename": "test_recording.avi",
+  "filename": "test_recording.mp4",
   "exposure_ms": 2.0,
   "gain": 4.0,
   "fps": 5.0
@@ -110,30 +122,36 @@ Content-Type: application/json
 ```
 
 **Request Model**: `StartRecordingRequest`
+
 - `filename` (optional): Custom filename (datetime prefix will be added automatically)
 - `exposure_ms` (optional): Exposure time in milliseconds
 - `gain` (optional): Camera gain value
 - `fps` (optional): Target frames per second
 
 **Response**: `StartRecordingResponse`
+
 ```json
 {
   "success": true,
   "message": "Recording started for camera1",
-  "filename": "20240115_103000_test_recording.avi"
+  "filename": "20240115_103000_test_recording.mp4"
 }
 ```
 
 **Key Features**:
+
 - ✅ **Automatic datetime prefix**: All filenames get `YYYYMMDD_HHMMSS_` prefix
 - ✅ **Dynamic camera settings**: Adjust exposure, gain, and FPS per recording
 - ✅ **Backward compatibility**: All existing API calls work unchanged
 
 ### Stop Recording
+
 ```http
 POST /cameras/{camera_name}/stop-recording
 ```
+
 **Response**: `StopRecordingResponse`
+
 ```json
 {
   "success": true,
@@ -145,10 +163,13 @@ POST /cameras/{camera_name}/stop-recording
 ## 🤖 Auto-Recording Management
 
 ### Enable Auto-Recording for Camera
+
 ```http
 POST /cameras/{camera_name}/auto-recording/enable
 ```
+
 **Response**: `AutoRecordingConfigResponse`
+
 ```json
 {
   "success": true,
@@ -159,16 +180,21 @@ POST /cameras/{camera_name}/auto-recording/enable
 ```
 
 ### Disable Auto-Recording for Camera
+
 ```http
 POST /cameras/{camera_name}/auto-recording/disable
 ```
+
 **Response**: `AutoRecordingConfigResponse`
 
 ### Get Auto-Recording Status
+
 ```http
 GET /auto-recording/status
 ```
+
 **Response**: `AutoRecordingStatusResponse`
+
 ```json
 {
   "running": true,
@@ -179,6 +205,7 @@ GET /auto-recording/status
 ```
 
 **Auto-Recording Features**:
+
 - 🤖 **MQTT-triggered recording**: Automatically starts/stops based on machine state
 - 🔄 **Retry logic**: Failed recordings are retried with configurable delays
 - 📊 **Per-camera control**: Enable/disable auto-recording individually
@@ -187,10 +214,13 @@ GET /auto-recording/status
 ## 🎛️ Camera Configuration
 
 ### Get Camera Configuration
+
 ```http
 GET /cameras/{camera_name}/config
 ```
+
 **Response**: `CameraConfigResponse`
+
 ```json
 {
   "name": "camera1",
@@ -225,6 +255,7 @@ GET /cameras/{camera_name}/config
 ```
 
 ### Update Camera Configuration
+
 ```http
 PUT /cameras/{camera_name}/config
 Content-Type: application/json
@@ -238,11 +269,13 @@ Content-Type: application/json
 ```
 
 ### Apply Configuration (Restart Required)
+
 ```http
 POST /cameras/{camera_name}/apply-config
 ```
 
 **Configuration Categories**:
+
 - ✅ **Real-time**: `exposure_ms`, `gain`, `target_fps`, `sharpness`, `contrast`, etc.
 - ⚠️ **Restart required**: `noise_filter_enabled`, `denoise_3d_enabled`, `bit_depth`, `video_format`, `video_codec`, `video_quality`
 
@@ -251,16 +284,21 @@ For detailed configuration options, see [Camera Configuration API Guide](api/CAM
 ## 📡 MQTT & Machine Status
 
 ### Get All Machines
+
 ```http
 GET /machines
 ```
+
 **Response**: `Dict[str, MachineStatusResponse]`
 
 ### Get MQTT Status
+
 ```http
 GET /mqtt/status
 ```
+
 **Response**: `MQTTStatusResponse`
+
 ```json
 {
   "connected": true,
@@ -275,10 +313,13 @@ GET /mqtt/status
 ```
 
 ### Get MQTT Events History
+
 ```http
 GET /mqtt/events?limit=10
 ```
+
 **Response**: `MQTTEventsHistoryResponse`
+
 ```json
 {
   "events": [
@@ -299,10 +340,13 @@ GET /mqtt/events?limit=10
 ## 💾 Storage & File Management
 
 ### Get Storage Statistics
+
 ```http
 GET /storage/stats
 ```
+
 **Response**: `StorageStatsResponse`
+
 ```json
 {
   "base_path": "/storage",
@@ -328,6 +372,7 @@ GET /storage/stats
 ```
 
 ### Get File List
+
 ```http
 POST /storage/files
 Content-Type: application/json
@@ -339,7 +384,9 @@ Content-Type: application/json
   "limit": 50
 }
 ```
+
 **Response**: `FileListResponse`
+
 ```json
 {
   "files": [
@@ -356,6 +403,7 @@ Content-Type: application/json
 ```
 
 ### Cleanup Old Files
+
 ```http
 POST /storage/cleanup
 Content-Type: application/json
@@ -364,7 +412,9 @@ Content-Type: application/json
   "max_age_days": 30
 }
 ```
+
 **Response**: `CleanupResponse`
+
 ```json
 {
   "files_removed": 25,
@@ -376,42 +426,55 @@ Content-Type: application/json
 ## 🔄 Camera Recovery & Diagnostics
 
 ### Test Camera Connection
+
 ```http
 POST /cameras/{camera_name}/test-connection
 ```
+
 **Response**: `CameraTestResponse`
 
 ### Reconnect Camera
+
 ```http
 POST /cameras/{camera_name}/reconnect
 ```
+
 **Response**: `CameraRecoveryResponse`
 
 ### Restart Camera Grab Process
+
 ```http
 POST /cameras/{camera_name}/restart-grab
 ```
+
 **Response**: `CameraRecoveryResponse`
 
 ### Reset Camera Timestamp
+
 ```http
 POST /cameras/{camera_name}/reset-timestamp
 ```
+
 **Response**: `CameraRecoveryResponse`
 
 ### Full Camera Reset
+
 ```http
 POST /cameras/{camera_name}/full-reset
 ```
+
 **Response**: `CameraRecoveryResponse`
 
 ### Reinitialize Camera
+
 ```http
 POST /cameras/{camera_name}/reinitialize
 ```
+
 **Response**: `CameraRecoveryResponse`
 
 **Recovery Response Example**:
+
 ```json
 {
   "success": true,
@@ -425,22 +488,27 @@ POST /cameras/{camera_name}/reinitialize
 ## 📺 Live Streaming
 
 ### Get Live MJPEG Stream
+
 ```http
 GET /cameras/{camera_name}/stream
 ```
+
 **Response**: MJPEG video stream (multipart/x-mixed-replace)
 
 ### Start Camera Stream
+
 ```http
 POST /cameras/{camera_name}/start-stream
 ```
 
 ### Stop Camera Stream
+
 ```http
 POST /cameras/{camera_name}/stop-stream
 ```
 
 **Streaming Features**:
+
 - 📺 **MJPEG format**: Compatible with web browsers and React apps
 - 🔄 **Concurrent operation**: Stream while recording simultaneously
 - ⚡ **Low latency**: Real-time preview for monitoring
@@ -450,8 +518,9 @@ For detailed streaming integration, see [Streaming Guide](guides/STREAMING_GUIDE
 ## 🌐 WebSocket Real-time Updates
 
 ### Connect to WebSocket
+
 ```javascript
-const ws = new WebSocket('ws://localhost:8000/ws');
+const ws = new WebSocket('ws://vision:8000/ws');
 
 ws.onmessage = (event) => {
   const update = JSON.parse(event.data);
@@ -460,6 +529,7 @@ ws.onmessage = (event) => {
 ```
 
 **WebSocket Message Types**:
+
 - `system_status`: System status changes
 - `camera_status`: Camera status updates
 - `recording_started`: Recording start events
@@ -468,6 +538,7 @@ ws.onmessage = (event) => {
 - `auto_recording_event`: Auto-recording status changes
 
 **Example WebSocket Message**:
+
 ```json
 {
   "type": "recording_started",
@@ -483,26 +554,28 @@ ws.onmessage = (event) => {
 ## 🚀 Quick Start Examples
 
 ### Basic System Monitoring
+
 ```bash
 # Check system health
-curl http://localhost:8000/health
+curl http://vision:8000/health
 
 # Get overall system status
-curl http://localhost:8000/system/status
+curl http://vision:8000/system/status
 
 # Get all camera statuses
-curl http://localhost:8000/cameras
+curl http://vision:8000/cameras
 ```
 
 ### Manual Recording Control
+
 ```bash
 # Start recording with default settings
-curl -X POST http://localhost:8000/cameras/camera1/start-recording \
+curl -X POST http://vision:8000/cameras/camera1/start-recording \
   -H "Content-Type: application/json" \
   -d '{"filename": "manual_test.avi"}'
 
 # Start recording with custom camera settings
-curl -X POST http://localhost:8000/cameras/camera1/start-recording \
+curl -X POST http://vision:8000/cameras/camera1/start-recording \
   -H "Content-Type: application/json" \
   -d '{
     "filename": "high_quality.avi",
@@ -512,28 +585,30 @@ curl -X POST http://localhost:8000/cameras/camera1/start-recording \
   }'
 
 # Stop recording
-curl -X POST http://localhost:8000/cameras/camera1/stop-recording
+curl -X POST http://vision:8000/cameras/camera1/stop-recording
 ```
 
 ### Auto-Recording Management
+
 ```bash
 # Enable auto-recording for camera1
-curl -X POST http://localhost:8000/cameras/camera1/auto-recording/enable
+curl -X POST http://vision:8000/cameras/camera1/auto-recording/enable
 
 # Check auto-recording status
-curl http://localhost:8000/auto-recording/status
+curl http://vision:8000/auto-recording/status
 
 # Disable auto-recording for camera1
-curl -X POST http://localhost:8000/cameras/camera1/auto-recording/disable
+curl -X POST http://vision:8000/cameras/camera1/auto-recording/disable
 ```
 
 ### Camera Configuration
+
 ```bash
 # Get current camera configuration
-curl http://localhost:8000/cameras/camera1/config
+curl http://vision:8000/cameras/camera1/config
 
 # Update camera settings (real-time)
-curl -X PUT http://localhost:8000/cameras/camera1/config \
+curl -X PUT http://vision:8000/cameras/camera1/config \
   -H "Content-Type: application/json" \
   -d '{
     "exposure_ms": 1.5,
@@ -548,28 +623,33 @@ curl -X PUT http://localhost:8000/cameras/camera1/config \
 ### ✨ New in Latest Version
 
 #### 1. Enhanced Recording API
+
 - **Dynamic camera settings**: Set exposure, gain, and FPS per recording
 - **Automatic datetime prefixes**: All filenames get timestamp prefixes
 - **Backward compatibility**: Existing API calls work unchanged
 
 #### 2. Auto-Recording Feature
+
 - **Per-camera control**: Enable/disable auto-recording individually
 - **MQTT integration**: Automatic recording based on machine states
 - **Retry logic**: Failed recordings are automatically retried
 - **Status tracking**: Monitor auto-recording attempts and failures
 
 #### 3. Advanced Camera Configuration
+
 - **Real-time settings**: Update exposure, gain, image quality without restart
 - **Image enhancement**: Sharpness, contrast, saturation, gamma controls
 - **Noise reduction**: Configurable noise filtering and 3D denoising
 - **HDR support**: High Dynamic Range imaging capabilities
 
 #### 4. Live Streaming
+
 - **MJPEG streaming**: Real-time camera preview
 - **Concurrent operation**: Stream while recording simultaneously
 - **Web-compatible**: Direct integration with React/HTML video elements
 
 #### 5. Enhanced Monitoring
+
 - **MQTT event history**: Track machine state changes over time
 - **Storage statistics**: Monitor disk usage and file counts
 - **WebSocket updates**: Real-time system status notifications
@@ -577,11 +657,13 @@ curl -X PUT http://localhost:8000/cameras/camera1/config \
 ### 🔄 Migration Notes
 
 #### From Previous Versions
+
 1. **Recording API**: All existing calls work, but now return filenames with datetime prefixes
 2. **Configuration**: New camera settings are optional and backward compatible
 3. **Auto-recording**: New feature, requires enabling in `config.json` and per camera
 
 #### Configuration Updates
+
 ```json
 {
   "cameras": [
@@ -613,22 +695,28 @@ curl -X PUT http://localhost:8000/cameras/camera1/config \
 ## 📞 Support & Integration
 
 ### API Base URL
-- **Development**: `http://localhost:8000`
+
+- **Development**: `http://vision:8000`
 - **Production**: Configure in `config.json` under `system.api_host` and `system.api_port`
 
 ### Error Handling
+
 All endpoints return standard HTTP status codes:
+
 - `200`: Success
 - `404`: Resource not found (camera, file, etc.)
 - `500`: Internal server error
 - `503`: Service unavailable (camera manager, MQTT, etc.)
 
 ### Rate Limiting
+
 - No rate limiting currently implemented
 - WebSocket connections are limited to reasonable concurrent connections
 
 ### CORS Support
+
 - CORS is enabled for web dashboard integration
 - Configure allowed origins in the API server settings
+
 ```
 ```

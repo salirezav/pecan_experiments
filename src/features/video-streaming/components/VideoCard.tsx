@@ -33,8 +33,8 @@ export const VideoCard: React.FC<VideoCardProps> = ({
   };
 
   const cardClasses = [
-    'bg-white rounded-lg shadow-md overflow-hidden transition-shadow hover:shadow-lg',
-    onClick ? 'cursor-pointer' : '',
+    'bg-white rounded-xl border border-gray-200 overflow-hidden transition-all hover:shadow-theme-md',
+    onClick ? 'cursor-pointer hover:border-gray-300' : '',
     className,
   ].filter(Boolean).join(' ');
 
@@ -117,7 +117,7 @@ export const VideoCard: React.FC<VideoCardProps> = ({
 
         {/* Metadata (if available and requested) */}
         {showMetadata && 'metadata' in video && video.metadata && (
-          <div className="border-t pt-3 mt-3">
+          <div className="border-t pt-3 mt-3 border-gray-100">
             <div className="grid grid-cols-2 gap-4 text-sm text-gray-600">
               <div>
                 <span className="font-medium">Duration:</span> {Math.round(video.metadata.duration_seconds)}s
@@ -136,7 +136,7 @@ export const VideoCard: React.FC<VideoCardProps> = ({
         )}
 
         {/* Actions */}
-        <div className="flex justify-between items-center mt-4 pt-3 border-t">
+        <div className="flex justify-between items-center mt-4 pt-3 border-t border-gray-100">
           <div className="text-xs text-gray-500">
             {formatVideoDate(video.created_at)}
           </div>
@@ -147,7 +147,7 @@ export const VideoCard: React.FC<VideoCardProps> = ({
                 e.stopPropagation();
                 handleClick();
               }}
-              className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              className="inline-flex items-center px-3 py-1.5 text-xs font-medium transition rounded-lg border border-transparent bg-brand-500 text-white hover:bg-brand-600 shadow-theme-xs"
             >
               <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />

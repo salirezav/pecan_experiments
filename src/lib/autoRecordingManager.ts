@@ -226,8 +226,8 @@ export class AutoRecordingManager {
   private async startAutoRecording(cameraName: string, machineName: string): Promise<void> {
     try {
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
-      const filename = `auto_${machineName}_${timestamp}.avi`
-      
+      const filename = `auto_${machineName}_${timestamp}.mp4`
+
       const result = await visionApi.startRecording(cameraName, { filename })
       
       if (result.success) {

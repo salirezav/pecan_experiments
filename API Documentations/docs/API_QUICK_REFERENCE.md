@@ -6,30 +6,30 @@ Quick reference for the most commonly used API endpoints. For complete documenta
 
 ```bash
 # Health check
-curl http://localhost:8000/health
+curl http://vision:8000/health
 
 # System overview
-curl http://localhost:8000/system/status
+curl http://vision:8000/system/status
 
 # All cameras
-curl http://localhost:8000/cameras
+curl http://vision:8000/cameras
 
 # All machines
-curl http://localhost:8000/machines
+curl http://vision:8000/machines
 ```
 
 ## 🎥 Recording Control
 
 ### Start Recording (Basic)
 ```bash
-curl -X POST http://localhost:8000/cameras/camera1/start-recording \
+curl -X POST http://vision:8000/cameras/camera1/start-recording \
   -H "Content-Type: application/json" \
   -d '{"filename": "test.avi"}'
 ```
 
 ### Start Recording (With Settings)
 ```bash
-curl -X POST http://localhost:8000/cameras/camera1/start-recording \
+curl -X POST http://vision:8000/cameras/camera1/start-recording \
   -H "Content-Type: application/json" \
   -d '{
     "filename": "high_quality.avi",
@@ -41,30 +41,30 @@ curl -X POST http://localhost:8000/cameras/camera1/start-recording \
 
 ### Stop Recording
 ```bash
-curl -X POST http://localhost:8000/cameras/camera1/stop-recording
+curl -X POST http://vision:8000/cameras/camera1/stop-recording
 ```
 
 ## 🤖 Auto-Recording
 
 ```bash
 # Enable auto-recording
-curl -X POST http://localhost:8000/cameras/camera1/auto-recording/enable
+curl -X POST http://vision:8000/cameras/camera1/auto-recording/enable
 
 # Disable auto-recording
-curl -X POST http://localhost:8000/cameras/camera1/auto-recording/disable
+curl -X POST http://vision:8000/cameras/camera1/auto-recording/disable
 
 # Check auto-recording status
-curl http://localhost:8000/auto-recording/status
+curl http://vision:8000/auto-recording/status
 ```
 
 ## 🎛️ Camera Configuration
 
 ```bash
 # Get camera config
-curl http://localhost:8000/cameras/camera1/config
+curl http://vision:8000/cameras/camera1/config
 
 # Update camera settings
-curl -X PUT http://localhost:8000/cameras/camera1/config \
+curl -X PUT http://vision:8000/cameras/camera1/config \
   -H "Content-Type: application/json" \
   -d '{
     "exposure_ms": 1.5,
@@ -77,41 +77,41 @@ curl -X PUT http://localhost:8000/cameras/camera1/config \
 
 ```bash
 # Start streaming
-curl -X POST http://localhost:8000/cameras/camera1/start-stream
+curl -X POST http://vision:8000/cameras/camera1/start-stream
 
 # Get MJPEG stream (use in browser/video element)
-# http://localhost:8000/cameras/camera1/stream
+# http://vision:8000/cameras/camera1/stream
 
 # Stop streaming
-curl -X POST http://localhost:8000/cameras/camera1/stop-stream
+curl -X POST http://vision:8000/cameras/camera1/stop-stream
 ```
 
 ## 🔄 Camera Recovery
 
 ```bash
 # Test connection
-curl -X POST http://localhost:8000/cameras/camera1/test-connection
+curl -X POST http://vision:8000/cameras/camera1/test-connection
 
 # Reconnect camera
-curl -X POST http://localhost:8000/cameras/camera1/reconnect
+curl -X POST http://vision:8000/cameras/camera1/reconnect
 
 # Full reset
-curl -X POST http://localhost:8000/cameras/camera1/full-reset
+curl -X POST http://vision:8000/cameras/camera1/full-reset
 ```
 
 ## 💾 Storage Management
 
 ```bash
 # Storage statistics
-curl http://localhost:8000/storage/stats
+curl http://vision:8000/storage/stats
 
 # List files
-curl -X POST http://localhost:8000/storage/files \
+curl -X POST http://vision:8000/storage/files \
   -H "Content-Type: application/json" \
   -d '{"camera_name": "camera1", "limit": 10}'
 
 # Cleanup old files
-curl -X POST http://localhost:8000/storage/cleanup \
+curl -X POST http://vision:8000/storage/cleanup \
   -H "Content-Type: application/json" \
   -d '{"max_age_days": 30}'
 ```
@@ -120,17 +120,17 @@ curl -X POST http://localhost:8000/storage/cleanup \
 
 ```bash
 # MQTT status
-curl http://localhost:8000/mqtt/status
+curl http://vision:8000/mqtt/status
 
 # Recent MQTT events
-curl http://localhost:8000/mqtt/events?limit=10
+curl http://vision:8000/mqtt/events?limit=10
 ```
 
 ## 🌐 WebSocket Connection
 
 ```javascript
 // Connect to real-time updates
-const ws = new WebSocket('ws://localhost:8000/ws');
+const ws = new WebSocket('ws://vision:8000/ws');
 
 ws.onmessage = (event) => {
   const update = JSON.parse(event.data);
