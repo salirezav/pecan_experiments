@@ -51,13 +51,13 @@ export const Pagination: React.FC<PaginationProps> = ({
   const isLastPage = currentPage === totalPages;
 
   // Button base classes matching dashboard template
-  const baseButtonClasses = "inline-flex items-center justify-center px-3 py-2 text-sm font-medium transition rounded-lg border";
+  const baseButtonClasses = "inline-flex items-center justify-center px-3 py-2 text-sm font-medium transition-all duration-200 rounded-lg border";
 
   // Active page button classes
-  const activeButtonClasses = "bg-brand-500 text-white border-brand-500 hover:bg-brand-600 shadow-theme-xs";
+  const activeButtonClasses = "bg-brand-500 text-white border-brand-500 hover:bg-brand-600 shadow-theme-sm";
 
   // Inactive page button classes
-  const inactiveButtonClasses = "bg-white text-gray-700 border-gray-300 hover:bg-gray-50";
+  const inactiveButtonClasses = "bg-white text-gray-700 border-gray-300 hover:bg-gray-50 hover:border-gray-400 shadow-theme-xs";
 
   // Disabled button classes
   const disabledButtonClasses = "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed opacity-50";

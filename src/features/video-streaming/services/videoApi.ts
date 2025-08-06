@@ -13,9 +13,11 @@ import {
   type VideoListParams,
   type ThumbnailParams,
 } from '../types';
+import { performanceMonitor } from '../utils/performanceMonitor';
 
-// Configuration
-const API_BASE_URL = 'http://vision:8000'; // Based on the test script
+// Configuration - Use environment variable or default to vision container
+// The API is accessible at vision:8000 in the current setup
+const API_BASE_URL = import.meta.env.VITE_VISION_API_URL || 'http://vision:8000';
 
 /**
  * Custom error class for video API errors
@@ -86,10 +88,45 @@ export class VideoApiService {
   }
 
   /**
+   * Get total count of videos with filters (without pagination)
+   */
+  private totalCountCache = new Map<string, { count: number; timestamp: number }>();
+  private readonly CACHE_DURATION = 30000; // 30 seconds cache
+
+  private async getTotalCount(params: Omit<VideoListParams, 'limit' | 'offset' | 'page'>): Promise<number> {
+    // Create cache key from params
+    const cacheKey = JSON.stringify(params);
+    const cached = this.totalCountCache.get(cacheKey);
+
+    // Return cached result if still valid
+    if (cached && Date.now() - cached.timestamp < this.CACHE_DURATION) {
+      return cached.count;
+    }
+
+    const queryString = buildQueryString({ ...params, limit: 1000 }); // Use high limit to get accurate total
+    const url = `${this.baseUrl}/videos/${queryString ? `?${queryString}` : ''}`;
+
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json',
+      },
+    });
+
+    const result = await handleApiResponse<VideoListResponse>(response);
+    const count = result.videos.length; // Since backend returns wrong total_count, count the actual videos
+
+    // Cache the result
+    this.totalCountCache.set(cacheKey, { count, timestamp: Date.now() });
+
+    return count;
+  }
+
+  /**
    * Get list of videos with optional filtering
    */
   async getVideos(params: VideoListParams = {}): Promise<VideoListResponse> {
-    try {
+    return performanceMonitor.trackOperation('get_videos', async () => {
       // Convert page-based params to offset-based for API compatibility
       const apiParams = { ...params };
 
@@ -113,9 +150,18 @@ export class VideoApiService {
 
       // Add pagination metadata if page was requested
       if (params.page && params.limit) {
-        const totalPages = Math.ceil(result.total_count / params.limit);
+        // Get accurate total count by calling without pagination
+        const totalCount = await this.getTotalCount({
+          camera_name: params.camera_name,
+          start_date: params.start_date,
+          end_date: params.end_date,
+          include_metadata: params.include_metadata,
+        });
+
+        const totalPages = Math.ceil(totalCount / params.limit);
         return {
           ...result,
+          total_count: totalCount, // Use accurate total count
           page: params.page,
           total_pages: totalPages,
           has_next: params.page < totalPages,
@@ -124,16 +170,7 @@ export class VideoApiService {
       }
 
       return result;
-    } catch (error) {
-      if (error instanceof VideoApiError) {
-        throw error;
-      }
-      throw new VideoApiError(
-        'NETWORK_ERROR',
-        'Failed to fetch videos',
-        { originalError: error }
-      );
-    }
+    }, { params });
   }
 
   /**
@@ -205,7 +242,7 @@ export class VideoApiService {
    * Download thumbnail as blob
    */
   async getThumbnailBlob(fileId: string, params: ThumbnailParams = {}): Promise<Blob> {
-    try {
+    return performanceMonitor.trackOperation('get_thumbnail', async () => {
       const url = this.getThumbnailUrl(fileId, params);
       const response = await fetch(url);
 
@@ -218,16 +255,7 @@ export class VideoApiService {
       }
 
       return await response.blob();
-    } catch (error) {
-      if (error instanceof VideoApiError) {
-        throw error;
-      }
-      throw new VideoApiError(
-        'NETWORK_ERROR',
-        `Failed to fetch thumbnail for ${fileId}`,
-        { originalError: error, fileId }
-      );
-    }
+    }, { fileId, params });
   }
 
   /**

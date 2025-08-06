@@ -56,27 +56,27 @@ When a camera has issues, follow this order:
 
 1. **Test Connection** - Diagnose the problem
    ```http
-   POST http://vision:8000/cameras/camera1/test-connection
+   POST http://localhost:8000/cameras/camera1/test-connection
    ```
 
 2. **Try Reconnect** - Most common fix
    ```http
-   POST http://vision:8000/cameras/camera1/reconnect
+   POST http://localhost:8000/cameras/camera1/reconnect
    ```
 
 3. **Restart Grab** - If reconnect doesn't work
    ```http
-   POST http://vision:8000/cameras/camera1/restart-grab
+   POST http://localhost:8000/cameras/camera1/restart-grab
    ```
 
 4. **Full Reset** - For persistent issues
    ```http
-   POST http://vision:8000/cameras/camera1/full-reset
+   POST http://localhost:8000/cameras/camera1/full-reset
    ```
 
 5. **Reinitialize** - For cameras that never worked
    ```http
-   POST http://vision:8000/cameras/camera1/reinitialize
+   POST http://localhost:8000/cameras/camera1/reinitialize
    ```
 
 ## Response Format

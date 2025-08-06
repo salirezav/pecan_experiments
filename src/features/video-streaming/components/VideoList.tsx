@@ -49,20 +49,19 @@ export const VideoList: React.FC<VideoListProps> = ({
     autoFetch: true,
   });
 
-  // Update filters when props change (but don't auto-fetch)
+  // Update filters when props change (without causing infinite loops)
   useEffect(() => {
     if (filters) {
       setLocalFilters(filters);
     }
   }, [filters]);
 
-  // Update sort when props change
+  // Update sort when props change (without causing infinite loops)
   useEffect(() => {
     if (sortOptions) {
       setLocalSort(sortOptions);
-      updateSort(sortOptions);
     }
-  }, [sortOptions, updateSort]);
+  }, [sortOptions]);
 
   const handleVideoClick = (video: any) => {
     if (onVideoSelect) {
@@ -134,6 +133,31 @@ export const VideoList: React.FC<VideoListProps> = ({
 
   return (
     <div className={containerClasses}>
+      {/* Top Pagination */}
+      {totalPages > 1 && (
+        <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-4 bg-white rounded-xl border border-gray-200 shadow-theme-sm">
+          {/* Page Info */}
+          <PageInfo
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={totalCount}
+            itemsPerPage={limit}
+            className="text-sm text-gray-600"
+          />
+
+          {/* Pagination Controls */}
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={goToPage}
+            showFirstLast={true}
+            showPrevNext={true}
+            maxVisiblePages={5}
+            className="justify-center sm:justify-end"
+          />
+        </div>
+      )}
+
       {/* Results Summary */}
       <div className="flex items-center justify-between mb-6">
         <div className="text-sm text-gray-600">
@@ -147,7 +171,7 @@ export const VideoList: React.FC<VideoListProps> = ({
         <button
           onClick={refetch}
           disabled={loading === 'loading'}
-          className="inline-flex items-center px-3 py-2 text-sm font-medium transition rounded-lg border bg-white text-gray-700 border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="inline-flex items-center px-3 py-2 text-sm font-medium transition rounded-lg border bg-white text-gray-700 border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed shadow-theme-xs"
         >
           <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -168,16 +192,16 @@ export const VideoList: React.FC<VideoListProps> = ({
         ))}
       </div>
 
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="mt-8 space-y-4">
+      {/* Bottom Pagination */}
+      {totalPages > 1 && videos.length > 0 && (
+        <div className="mt-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-4 bg-white rounded-xl border border-gray-200 shadow-theme-sm">
           {/* Page Info */}
           <PageInfo
             currentPage={currentPage}
             totalPages={totalPages}
             totalItems={totalCount}
             itemsPerPage={limit}
-            className="text-center"
+            className="text-sm text-gray-600"
           />
 
           {/* Pagination Controls */}
@@ -188,7 +212,7 @@ export const VideoList: React.FC<VideoListProps> = ({
             showFirstLast={true}
             showPrevNext={true}
             maxVisiblePages={5}
-            className="justify-center"
+            className="justify-center sm:justify-end"
           />
         </div>
       )}

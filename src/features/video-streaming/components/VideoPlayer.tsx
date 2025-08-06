@@ -23,7 +23,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(({
   onEnded,
   onError,
 }, forwardedRef) => {
-  const [videoInfo, setVideoInfo] = useState<{ filename?: string; mimeType: string }>({
+  const [videoInfo, setVideoInfo] = useState<{ filename?: string; mimeType: string; isStreamable?: boolean }>({
     mimeType: 'video/mp4' // Default to MP4
   });
 
@@ -40,7 +40,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(({
 
   const streamingUrl = videoApiService.getStreamingUrl(fileId);
 
-  // Fetch video info to determine MIME type
+  // Fetch video info to determine MIME type and streamability
   useEffect(() => {
     const fetchVideoInfo = async () => {
       try {
@@ -49,11 +49,16 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(({
           // Extract filename from file_id or use a default pattern
           const filename = info.file_id.includes('.') ? info.file_id : `${info.file_id}.mp4`;
           const mimeType = getVideoMimeType(filename);
-          setVideoInfo({ filename, mimeType });
+          setVideoInfo({
+            filename,
+            mimeType,
+            isStreamable: info.is_streamable
+          });
         }
       } catch (error) {
         console.warn('Could not fetch video info, using default MIME type:', error);
-        // Keep default MP4 MIME type
+        // Keep default MP4 MIME type, assume not streamable
+        setVideoInfo(prev => ({ ...prev, isStreamable: false }));
       }
     };
 
@@ -81,9 +86,10 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(({
       <video
         ref={ref}
         className="w-full h-full bg-black"
-        controls={!controls} // Use native controls if custom controls are disabled
+        controls={!controls || state.error} // Use native controls if custom controls are disabled or there's an error
         style={{ width, height }}
         playsInline // Important for iOS compatibility
+        preload="metadata" // Load metadata first for better UX
       >
         <source src={streamingUrl} type={videoInfo.mimeType} />
         {/* Fallback for MP4 if original format fails */}
@@ -96,7 +102,10 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(({
       {/* Loading Overlay */}
       {state.isLoading && (
         <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-          <div className="text-white text-lg">Loading...</div>
+          <div className="text-white text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-2"></div>
+            <div className="text-lg">Loading video...</div>
+          </div>
         </div>
       )}
 

@@ -6,6 +6,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { videoApiService } from '../services/videoApi';
+import { thumbnailCache } from '../utils/thumbnailCache';
 import { type VideoThumbnailProps } from '../types';
 
 export const VideoThumbnail: React.FC<VideoThumbnailProps> = ({
@@ -29,6 +30,15 @@ export const VideoThumbnail: React.FC<VideoThumbnailProps> = ({
         setIsLoading(true);
         setError(null);
 
+        // Check cache first
+        const cachedUrl = thumbnailCache.get(fileId, timestamp, width, height);
+        if (cachedUrl && isMounted) {
+          setThumbnailUrl(cachedUrl);
+          setIsLoading(false);
+          return;
+        }
+
+        // Fetch from API if not cached
         const blob = await videoApiService.getThumbnailBlob(fileId, {
           timestamp,
           width,
@@ -36,7 +46,8 @@ export const VideoThumbnail: React.FC<VideoThumbnailProps> = ({
         });
 
         if (isMounted) {
-          const url = URL.createObjectURL(blob);
+          // Store in cache and get URL
+          const url = thumbnailCache.set(fileId, timestamp, width, height, blob);
           setThumbnailUrl(url);
           setIsLoading(false);
         }
@@ -52,20 +63,11 @@ export const VideoThumbnail: React.FC<VideoThumbnailProps> = ({
 
     return () => {
       isMounted = false;
-      if (thumbnailUrl) {
-        URL.revokeObjectURL(thumbnailUrl);
-      }
+      // Note: We don't revoke the URL here since it's managed by the cache
     };
   }, [fileId, timestamp, width, height]);
 
-  // Cleanup URL on unmount
-  useEffect(() => {
-    return () => {
-      if (thumbnailUrl) {
-        URL.revokeObjectURL(thumbnailUrl);
-      }
-    };
-  }, [thumbnailUrl]);
+  // Note: URL cleanup is now handled by the thumbnail cache
 
   const handleClick = () => {
     if (onClick && !isLoading && !error) {

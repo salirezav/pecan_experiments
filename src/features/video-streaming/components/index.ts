@@ -11,6 +11,10 @@ export { VideoCard } from './VideoCard';
 export { VideoList } from './VideoList';
 export { VideoModal } from './VideoModal';
 export { Pagination, PageInfo } from './Pagination';
+export { ApiStatusIndicator } from './ApiStatusIndicator';
+export { VideoErrorBoundary, withVideoErrorBoundary } from './VideoErrorBoundary';
+export { PerformanceDashboard } from './PerformanceDashboard';
+export { VideoDebugger } from './VideoDebugger';
 
 // Re-export component prop types for convenience
 export type {

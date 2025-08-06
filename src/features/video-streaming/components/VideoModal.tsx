@@ -7,6 +7,7 @@
 import React, { useEffect } from 'react';
 import { type VideoFile } from '../types';
 import { VideoPlayer } from './VideoPlayer';
+import { VideoDebugger } from './VideoDebugger';
 import { useVideoInfo } from '../hooks/useVideoInfo';
 import {
   formatFileSize,
@@ -64,7 +65,7 @@ export const VideoModal: React.FC<VideoModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
+    <div className="fixed inset-0 z-[999999] overflow-y-auto">
       {/* Backdrop */}
       <div
         className="fixed inset-0 bg-black bg-opacity-75 transition-opacity"
@@ -109,8 +110,8 @@ export const VideoModal: React.FC<VideoModalProps> = ({
                     {video.status}
                   </span>
                   <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${isWebCompatible(video.format)
-                      ? 'bg-green-100 text-green-800'
-                      : 'bg-orange-100 text-orange-800'
+                    ? 'bg-green-100 text-green-800'
+                    : 'bg-orange-100 text-orange-800'
                     }`}>
                     {getFormatDisplayName(video.format)}
                   </span>
@@ -219,6 +220,9 @@ export const VideoModal: React.FC<VideoModalProps> = ({
                       </div>
                     </div>
                   )}
+
+                  {/* Video Debugger (development only) */}
+                  <VideoDebugger fileId={video.file_id} />
                 </div>
               </div>
             </div>

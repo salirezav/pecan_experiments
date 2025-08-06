@@ -66,13 +66,22 @@ export const VideoCard: React.FC<VideoCardProps> = ({
         </div>
 
         {/* Streamable Indicator */}
-        {video.is_streamable && (
+        {video.is_streamable ? (
           <div className="absolute bottom-2 left-2">
             <div className="bg-green-500 text-white text-xs px-2 py-1 rounded flex items-center">
               <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
               </svg>
               Streamable
+            </div>
+          </div>
+        ) : (
+          <div className="absolute bottom-2 left-2">
+            <div className="bg-yellow-500 text-white text-xs px-2 py-1 rounded flex items-center">
+              <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+              </svg>
+              Processing
             </div>
           </div>
         )}

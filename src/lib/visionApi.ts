@@ -1,6 +1,7 @@
 // Vision System API Client
-// Base URL for the vision system API
-const VISION_API_BASE_URL = 'http://vision:8000'
+// Base URL for the vision system API - Use environment variable or default to vision container
+// The API is accessible at vision:8000 in the current setup
+const VISION_API_BASE_URL = import.meta.env.VITE_VISION_API_URL || 'http://vision:8000'
 
 // Types based on the API documentation
 export interface SystemStatus {

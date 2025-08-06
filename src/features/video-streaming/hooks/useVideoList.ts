@@ -57,9 +57,11 @@ export function useVideoList(options: UseVideoListOptions = {}) {
   const [loading, setLoading] = useState<LoadingState>('idle');
   const [error, setError] = useState<VideoError | null>(null);
   const [hasMore, setHasMore] = useState(true);
+  const [currentParams, setCurrentParams] = useState<VideoListParams>(initialParams);
 
   // Refs for cleanup and caching
   const abortControllerRef = useRef<AbortController | null>(null);
+  const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
   /**
@@ -154,9 +156,10 @@ export function useVideoList(options: UseVideoListOptions = {}) {
       return;
     }
 
-    const params = { ...initialParams, page, limit: initialParams.limit || 20 };
+    const params = { ...currentParams, page, limit: currentParams.limit || 20 };
+    setCurrentParams(params);
     await fetchVideos(params, false);
-  }, [initialParams, totalPages, loading, fetchVideos]);
+  }, [currentParams, totalPages, loading, fetchVideos]);
 
   /**
    * Go to next page
@@ -189,6 +192,7 @@ export function useVideoList(options: UseVideoListOptions = {}) {
       limit: initialParams.limit || 20,
     };
 
+    setCurrentParams(newParams);
     fetchVideos(newParams, false);
   }, [initialParams, fetchVideos]);
 

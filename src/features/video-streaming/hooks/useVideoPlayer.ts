@@ -219,10 +219,29 @@ export function useVideoPlayer(options: UseVideoPlayerOptions = {}) {
 
     const handleLoadStart = () => {
       updateState({ isLoading: true, error: null });
+
+      // Set a timeout to detect if loading takes too long
+      const loadTimeout = setTimeout(() => {
+        if (video && video.readyState < 2) { // HAVE_CURRENT_DATA
+          updateState({
+            isLoading: false,
+            error: 'Video loading timeout. The video may not be accessible or there may be a network issue.'
+          });
+        }
+      }, 30000); // 30 second timeout
+
+      // Store timeout ID to clear it later
+      (video as any)._loadTimeout = loadTimeout;
     };
 
     const handleLoadedData = () => {
       updateState({ isLoading: false });
+
+      // Clear the loading timeout
+      if ((video as any)._loadTimeout) {
+        clearTimeout((video as any)._loadTimeout);
+        (video as any)._loadTimeout = null;
+      }
     };
 
     const handleTimeUpdate = () => {
@@ -252,6 +271,12 @@ export function useVideoPlayer(options: UseVideoPlayerOptions = {}) {
       const errorMessage = video.error?.message || 'Video playback error';
       updateState({ isLoading: false, error: errorMessage, isPlaying: false });
       onError?.(errorMessage);
+
+      // Clear the loading timeout
+      if ((video as any)._loadTimeout) {
+        clearTimeout((video as any)._loadTimeout);
+        (video as any)._loadTimeout = null;
+      }
     };
 
     const handleVolumeChange = () => {

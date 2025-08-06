@@ -73,10 +73,10 @@ Edit `config.json` to customize:
 - System parameters
 
 ### API Access
-- System status: `http://vision:8000/system/status`
-- Camera status: `http://vision:8000/cameras`
-- Manual recording: `POST http://vision:8000/cameras/camera1/start-recording`
-- Real-time updates: WebSocket at `ws://vision:8000/ws`
+- System status: `http://localhost:8000/system/status`
+- Camera status: `http://localhost:8000/cameras`
+- Manual recording: `POST http://localhost:8000/cameras/camera1/start-recording`
+- Real-time updates: WebSocket at `ws://localhost:8000/ws`
 
 ## 📊 Test Results
 
@@ -146,18 +146,18 @@ The system provides everything needed for your React dashboard:
 
 ```javascript
 // Example API usage
-const systemStatus = await fetch('http://vision:8000/system/status');
-const cameras = await fetch('http://vision:8000/cameras');
+const systemStatus = await fetch('http://localhost:8000/system/status');
+const cameras = await fetch('http://localhost:8000/cameras');
 
 // WebSocket for real-time updates
-const ws = new WebSocket('ws://vision:8000/ws');
+const ws = new WebSocket('ws://localhost:8000/ws');
 ws.onmessage = (event) => {
   const update = JSON.parse(event.data);
   // Handle real-time system updates
 };
 
 // Manual recording control
-await fetch('http://vision:8000/cameras/camera1/start-recording', {
+await fetch('http://localhost:8000/cameras/camera1/start-recording', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({ camera_name: 'camera1' })
